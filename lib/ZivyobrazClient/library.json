@@ -1,0 +1,9 @@
+{
+    "name": "ZivyobrazClient",
+    "version": "0.1.0",
+    "description": "Client library for zivyobraz.eu",
+    "keywords": ["zivyobraz"],
+    "licence": "MIT",
+    "frameworks": ["arduino"],
+    "platform": "espressif32"
+}
