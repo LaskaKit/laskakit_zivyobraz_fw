@@ -45,7 +45,7 @@ namespace LaskaKit {
         virtual void off() = 0;
         virtual void fullUpdate() = 0;
         virtual void setRotation(DisplayRotation rot) = 0;
-        virtual void fillScreen(int color);
+        virtual void fillScreen(int color) = 0;
         virtual void drawPixel(int x, int y, uint16_t color) = 0;
         virtual void drawText(int x, int y, const String& text, PixelColor px) = 0;
         virtual void drawCenteredText(int x, int y, const String& text) = 0;
@@ -80,5 +80,8 @@ namespace LaskaKit {
 
 
 #include <LaskaKitGDEQ0426T82.hpp>
+#include <LaskaKitGDEY042T81.hpp>
+#include <LaskaKitWFT042Z15.hpp>
+// #include <LaskaKitE2741FS081.hpp>
 
 #endif  // LASKAKITEPAPER_HPP

@@ -1,18 +1,18 @@
-#ifndef LASKAKITGDEQ0426T82_HPP
-#define LASKAKITGDEQ0426T82_HPP
+#ifndef LASKAKITGDEY042T81
+#define LASKAKITGDEY042T81
 
 #include <LaskaKitEpaper.hpp>
 #include <GxEPD2_BW.h>
 
 namespace LaskaKit {
-    class GDEQ0426T82 : public EpaperDisplay
+    class GDEY042T81 : public EpaperDisplay
     {
     private:
-        GxEPD2_BW<GxEPD2_426_GDEQ0426T82, GxEPD2_426_GDEQ0426T82::HEIGHT> display;
+        GxEPD2_BW<GxEPD2_420_GDEY042T81, GxEPD2_420_GDEY042T81::HEIGHT> display;
         int pin_power;
     public:
-        GDEQ0426T82(int pin_ss, int pin_dc, int pin_rst, int pin_busy, int pin_power)
-            : display(GxEPD2_426_GDEQ0426T82(pin_ss, pin_dc, pin_rst, pin_busy)),
+        GDEY042T81(int pin_ss, int pin_dc, int pin_rst, int pin_busy, int pin_power)
+            : display(GxEPD2_420_GDEY042T81(pin_ss, pin_dc, pin_rst, pin_busy)),
               pin_power(pin_power)
         {
             this->display.init();
@@ -79,7 +79,6 @@ namespace LaskaKit {
         {
             this->display.setTextColor(GxEPD_BLACK);
             this->display.setCursor(x, y);
-            // this->display.setFont(&OpenSansSB_50px);
             this->display.print(text);
         }
         
@@ -100,7 +99,7 @@ namespace LaskaKit {
         void drawQrCode(int x, int y, int width, const uint8_t* data)
         {}
 
-        ~GDEQ0426T82()
+        ~GDEY042T81()
         {
             this->display.end();
             this->off();
@@ -108,4 +107,4 @@ namespace LaskaKit {
     };
 }
 
-#endif  // LASKAKITGDEQ0426T82_HPP
+#endif  // LASKAKITGDEY042T81

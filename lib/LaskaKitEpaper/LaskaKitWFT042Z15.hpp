@@ -1,18 +1,21 @@
-#ifndef LASKAKITGDEQ0426T82_HPP
-#define LASKAKITGDEQ0426T82_HPP
+#ifndef LASKAKITWFT042Z15_HPP
+#define LASKAKITWFT042Z15_HPP
 
 #include <LaskaKitEpaper.hpp>
+#include <GxEPD2_3C.h>
 #include <GxEPD2_BW.h>
 
+#include <OpenSansSB_50px.h>
+
 namespace LaskaKit {
-    class GDEQ0426T82 : public EpaperDisplay
+    class WFT042Z15 : public EpaperDisplay
     {
     private:
-        GxEPD2_BW<GxEPD2_426_GDEQ0426T82, GxEPD2_426_GDEQ0426T82::HEIGHT> display;
+        GxEPD2_BW<GxEPD2_420, GxEPD2_420::HEIGHT> display;
         int pin_power;
     public:
-        GDEQ0426T82(int pin_ss, int pin_dc, int pin_rst, int pin_busy, int pin_power)
-            : display(GxEPD2_426_GDEQ0426T82(pin_ss, pin_dc, pin_rst, pin_busy)),
+        WFT042Z15(int pin_ss, int pin_dc, int pin_rst, int pin_busy, int pin_power)
+            : display(GxEPD2_420(pin_ss, pin_dc, pin_rst, pin_busy)),
               pin_power(pin_power)
         {
             this->display.init();
@@ -78,8 +81,8 @@ namespace LaskaKit {
         void drawText(int x, int y, const String& text, PixelColor px)
         {
             this->display.setTextColor(GxEPD_BLACK);
+            this->display.setFont(&OpenSansSB_50px);
             this->display.setCursor(x, y);
-            // this->display.setFont(&OpenSansSB_50px);
             this->display.print(text);
         }
         
@@ -87,6 +90,8 @@ namespace LaskaKit {
         {
             int16_t x_center, y_center;
             uint16_t width, height;
+            this->display.setFont(&OpenSansSB_50px);
+            this->display.setTextColor(0);
             this->display.getTextBounds(text.c_str(), 0, 0, &x_center, &y_center, &width, &height);
             this->display.setCursor(x - (width / 2), y + (height / 2));
             this->display.print(text);
@@ -100,7 +105,7 @@ namespace LaskaKit {
         void drawQrCode(int x, int y, int width, const uint8_t* data)
         {}
 
-        ~GDEQ0426T82()
+        ~WFT042Z15()
         {
             this->display.end();
             this->off();
