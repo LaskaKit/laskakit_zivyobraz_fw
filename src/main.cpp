@@ -3,36 +3,9 @@
 #include <laskakit_epaper.hpp>
 #include <espclient.hpp>
 
-#include <Utils.hpp>
-
 #include <WiFi.h>
 #include <esp_wifi.h>
 #include <memory>
-
-#include "graphics.c"
-
-// s3
-// #define CS 10
-// #define DC 48
-// #define RST 45
-// #define BUSY 36
-// #define PWR   2
-
-// espink 4.2
-// #define CS    5
-// #define DC   17
-// #define RST  16
-// #define BUSY  4
-// #define PWR   2
-
-// espink v3.3
-// #define SDA  11
-// #define SCL  12
-// #define CS   10
-// #define DC   48
-// #define RST  45
-// #define BUSY 36
-// #define PWR  47
 
 // espink v3.5
 #define SDA 11
@@ -54,6 +27,7 @@
 #include "esp_system.h"
 #include "soc/soc_caps.h"
 
+#include "secret.h"
 
 using namespace LaskaKit::ZivyObraz;
 
@@ -297,8 +271,6 @@ void setup()
     // display_gfx->drawChar(600, 10, 'I', 0, 0, 10);
     // display_gfx->drawChar(700, 10, 'T', 0, 0, 10);
 
-    constexpr const char* wifiSsid = "wifi_ssid";
-    constexpr const char* wifiPass = "wifi_pass";
     WiFi.begin(wifiSsid, wifiPass);
     while (WiFi.status() != WL_CONNECTED)
     {
@@ -311,7 +283,6 @@ void setup()
 
     Serial.println(WiFi.macAddress());
 
-    constexpr const char* espMac = "esp_mac";
     EspClient client(ZIVYOBRAZ_HOST);
     client.addParam("mac", espMac);
     client.addParam("x", "800");
