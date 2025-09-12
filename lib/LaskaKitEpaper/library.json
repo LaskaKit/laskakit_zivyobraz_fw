@@ -1,9 +1,0 @@
-{
-    "name": "LaskaKitEpaper",
-    "version": "0.1.0",
-    "description": "Library for EPaper displays supported by LaskaKit",
-    "keywords": ["E-Paper", "E-Ink"],
-    "licence": "MIT",
-    "frameworks": ["arduino"],
-    "platform": "espressif32"
-}
