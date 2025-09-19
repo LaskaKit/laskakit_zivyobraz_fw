@@ -18,9 +18,14 @@
 // #define PWR 47
 
 // ZIVYOBRAZ CLIENT PARAMS
-#define ZIVYOBRAZ_HOST "https://cdn.zivyobraz.eu"
-#define ZIVYOBRAZ_FIRMWARE_VERSION "2.5"
-#define ZIVYOBRAZ_COLOR_TYPE "4G"
+namespace {
+    constexpr const char* ZIVYOBRAZ_HOST = "https://cdn.zivyobraz.eu";
+    constexpr const char* ZIVYOBRAZ_FIRMWARE_VERSION = "2.5";
+    constexpr const char* ZIVYOBRAZ_COLOR_TYPE = "4G";
+
+    constexpr const char* AP_SSID = "ESPINK-Setup";
+    constexpr const char* AP_PASS = "123456789";
+}
 
 // ---------------
 
@@ -83,9 +88,9 @@ void setup()
     });
 
   
-    if (!wm.autoConnect("ESPINK-Setup", "123456789")) {
+    if (!wm.autoConnect(AP_SSID, AP_PASS)) {
         Serial.println("Failed to connect, starting configuration portal");
-        if (!wm.startConfigPortal("ESPINK-Setup", "123456789")) {
+        if (!wm.startConfigPortal(AP_SSID, AP_PASS)) {
             Serial.println("Failed to connect and hit timeout.");
             ESP.restart();
         }
@@ -93,15 +98,14 @@ void setup()
 
     Serial.println("Connected to WiFi!");
     Serial.println("Local IP: " + WiFi.localIP().toString());
-
     Serial.println(WiFi.macAddress());
 
     EspClient client(ZIVYOBRAZ_HOST);
-    client.addParam("mac", espMac);
-    client.addParam("x", "800");
-    client.addParam("y", "480");
-    client.addParam("c", "4G");
-    client.addParam("fw", "2.5");
+    client.addParam("mac", WiFi.macAddress().c_str());
+    client.addParam("x", String(display->width()).c_str());
+    client.addParam("y", String(display->height()).c_str());
+    client.addParam("c", ZIVYOBRAZ_COLOR_TYPE);
+    client.addParam("fw", ZIVYOBRAZ_FIRMWARE_VERSION);
 
     unsigned long start = millis();
     client.get();
