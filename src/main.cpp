@@ -64,11 +64,11 @@ uint8_t rgb_to_4_gray_alt(uint8_t r, uint8_t g, uint8_t b) {
 
     // Quantize to 4 levels (2 bits)
     // Map 0-255 range to 0-3 range
-    if (gray < 64.0f) {        // 0-63   -> 0 (darkest)
+    if (gray < 64.1f) {        // 0-63   -> 0 (darkest)
         return 0x11;
-    } else if (gray < 128.0f) { // 64-127 -> 1 (dark gray)
+    } else if (gray < 128.1f) { // 64-127 -> 1 (dark gray)
         return 0x10;
-    } else if (gray < 192.0f) { // 128-191 -> 2 (light gray)
+    } else if (gray < 192.1f) { // 128-191 -> 2 (light gray)
         return 0x01;
     } else {                   // 192-255 -> 3 (lightest)
         return 0x00;
@@ -144,7 +144,7 @@ void setup()
     client.getHeader(headerValue, "Sleep");
     Serial.print("Deep sleep for: ");
     Serial.print(headerValue);
-    Serial.print("minutes -> ");
+    Serial.print(" minutes -> ");
 
     int sleepTimeS = String(headerValue).toInt() * 60;
     Serial.print(String(sleepTimeS).toInt());
