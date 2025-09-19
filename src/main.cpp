@@ -18,6 +18,8 @@ namespace {
 
     constexpr const char* AP_SSID = "ESPINK-Setup";
     constexpr const char* AP_PASS = "123456789";
+
+    constexpr size_t DEEP_SLEEP_TIME_S = 120;
 }
 
 // ---------------
@@ -51,7 +53,7 @@ void display_qr(std::unique_ptr<LaskaKit::Epaper::Display>& display, int pos_x =
                 fillRect(display, pos_x + x * scale, pos_y + y * scale, scale, scale, 0x11);
             }
         }
-  }
+    }
 }
 
 
@@ -102,7 +104,9 @@ void setup()
         Serial.println("Failed to connect, starting configuration portal");
         if (!wm.startConfigPortal(AP_SSID, AP_PASS)) {
             Serial.println("Failed to connect and hit timeout.");
-            ESP.restart();
+            esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME_S * 1000000);
+            delay(100);
+            esp_deep_sleep_start();
         }
     }
 
@@ -120,9 +124,6 @@ void setup()
     unsigned long start = millis();
     client.get();
 
-    char header[20];
-    client.getHeader(header, "Timestamp");
-    Serial.println(header);
 
     client.process([&display](Pixel* rowData, uint16_t row){
         for (int col = 0; col < 800; col++) {
@@ -132,11 +133,25 @@ void setup()
             display->drawPixel(col, row, convertedColor);
         }
     });
-    Serial.printf("Download: %lu\n", millis() - start);
+    Serial.printf("Download time: %lu ms\n", millis() - start);
 
     start = millis();
     display->fullUpdate();
-    Serial.printf("Update: %lu\n", millis() - start);
+    Serial.printf("Update time: %lu ms\n", millis() - start);
+
+    // Process headers
+    char headerValue[20];
+    client.getHeader(headerValue, "Sleep");
+    Serial.print("Deep sleep for: ");
+    Serial.print(headerValue);
+    Serial.print("minutes -> ");
+
+    int sleepTimeS = String(headerValue).toInt() * 60;
+    Serial.print(String(sleepTimeS).toInt());
+    Serial.println(" seconds");
+    esp_sleep_enable_timer_wakeup(sleepTimeS * 1000000);
+    delay(100);
+    esp_deep_sleep_start();
 }
 
 void loop()
