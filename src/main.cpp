@@ -75,9 +75,6 @@ void setup()
     wm.setConnectTimeout(30);
     wm.setHostname("ESPINK");
 
-    WiFiManagerParameter custom_display("display", "E-Paper display", "default type", 40);
-    wm.addParameter(&custom_display);
-
     wm.setAPCallback([](WiFiManager* myWiFiManager) {
         Serial.println("Entered config mode");
         Serial.println(WiFi.softAPIP());
@@ -85,36 +82,17 @@ void setup()
         Serial.println("Connect to: " + myWiFiManager->getConfigPortalSSID());
     });
 
-    wm.setSaveConfigCallback([]() {
-        Serial.println("Saving config");
-        Serial.println("WiFi connected!");
-        Serial.print("IP address: ");
-        Serial.println(WiFi.localIP());
-    });
-
-    bool shouldStartPortal = false;
-
-    if (shouldStartPortal) {
+  
+    if (!wm.autoConnect("ESPINK-Setup", "123456789")) {
+        Serial.println("Failed to connect, starting configuration portal");
         if (!wm.startConfigPortal("ESPINK-Setup", "123456789")) {
             Serial.println("Failed to connect and hit timeout.");
             ESP.restart();
-        }
-    } else {
-        if (!wm.autoConnect("ESPINK-Setup", "123456789")) {
-            Serial.println("Failed to connect, starting configuration portal");
-            if (!wm.startConfigPortal("ESPINK-Setup", "123456789")) {
-                Serial.println("Failed to connect and hit timeout.");
-                ESP.restart();
-            }
         }
     }
 
     Serial.println("Connected to WiFi!");
     Serial.println("Local IP: " + WiFi.localIP().toString());
-
-    String custom_display_param = custom_display.getValue();
-    Serial.println("Custom parameters:");
-    Serial.println("Display: " + custom_display_param);
 
     Serial.println(WiFi.macAddress());
 
