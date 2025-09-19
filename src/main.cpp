@@ -8,14 +8,6 @@
 #include <esp_wifi.h>
 #include <memory>
 
-// espink v3.5
-// #define SDA 11
-// #define SCL 12
-// #define CS 10
-// #define DC 48
-// #define RST 45
-// #define BUSY 38
-// #define PWR 47
 
 // ZIVYOBRAZ CLIENT PARAMS
 namespace {
@@ -29,12 +21,9 @@ namespace {
 
 // ---------------
 
-#include "secret.h"
 
 using namespace LaskaKit::ZivyObraz;
 
-
-// std::unique_ptr<LaskaKit::Epaper::DisplayGFX> display_gfx;
 
 uint8_t rgb_to_4_gray_alt(uint8_t r, uint8_t g, uint8_t b) {
     // Convert RGB to grayscale using standard luminance formula
@@ -63,17 +52,6 @@ void setup()
     std::unique_ptr<LaskaKit::Epaper::Display> display;
     display.reset(new LaskaKit::Epaper::GDEY075T7(PIN_CS, PIN_DC, PIN_RST, PIN_BUSY, PIN_PWR));
     display->fullUpdate();
-
-    // display_gfx.reset(new LaskaKit::Epaper::DisplayGFX(display));
-    // display_gfx->drawChar(0, 10, 'L', 0, 0, 10);
-    // display_gfx->drawChar(100, 10, 'A', 0, 0, 10);
-    // display_gfx->drawChar(200, 10, 'S', 0, 0, 10);
-    // display_gfx->drawChar(300, 10, 'K', 0, 0, 10);
-    // display_gfx->drawChar(400, 10, 'A', 0, 0, 10);
-    // display_gfx->drawChar(500, 10, 'K', 0, 0, 10);
-    // display_gfx->drawChar(600, 10, 'I', 0, 0, 10);
-    // display_gfx->drawChar(700, 10, 'T', 0, 0, 10);
-
 
     WiFiManager wm;
     wm.setConfigPortalTimeout(300);
