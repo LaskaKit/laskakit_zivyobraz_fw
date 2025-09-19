@@ -9,13 +9,13 @@
 #include <memory>
 
 // espink v3.5
-#define SDA 11
-#define SCL 12
-#define CS 10
-#define DC 48
-#define RST 45
-#define BUSY 38
-#define PWR 47
+// #define SDA 11
+// #define SCL 12
+// #define CS 10
+// #define DC 48
+// #define RST 45
+// #define BUSY 38
+// #define PWR 47
 
 // ZIVYOBRAZ CLIENT PARAMS
 #define ZIVYOBRAZ_HOST "https://cdn.zivyobraz.eu"
@@ -67,7 +67,8 @@ void setup()
     Serial.begin(115200);
     delay(2000);
 
-    display.reset(new LaskaKit::Epaper::GDEY075T7(CS, DC, RST, BUSY, PWR));
+    display.reset(new LaskaKit::Epaper::GDEY075T7(PIN_CS, PIN_DC, PIN_RST, PIN_BUSY, PIN_PWR));
+    // display.reset(new LaskaKit::Epaper::GDEY075T7(CS, DC, RST, BUSY, PWR));
     display->fullUpdate();
 
     // display_gfx.reset(new LaskaKit::Epaper::DisplayGFX(display));
