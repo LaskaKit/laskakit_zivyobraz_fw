@@ -29,7 +29,6 @@
 using namespace LaskaKit::ZivyObraz;
 
 
-std::unique_ptr<LaskaKit::Epaper::Display> display;
 // std::unique_ptr<LaskaKit::Epaper::DisplayGFX> display_gfx;
 
 uint8_t rgb_to_4_gray_alt(uint8_t r, uint8_t g, uint8_t b) {
@@ -51,24 +50,13 @@ uint8_t rgb_to_4_gray_alt(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 
-void mycb(Pixel* rowData, uint16_t row)
-{
-    for (int col = 0; col < 800; col++) {
-        // uint32_t color = rowData[col].red << 16 | rowData[col].green << 8 | rowData[col].blue;
-        // Serial.printf("row:%u col:%u R:%u G:%u B:%u -> C:%x\n", row, col, rowData[col].red, rowData[col].green, rowData[col].blue, color);
-        uint8_t convertedColor = rgb_to_4_gray_alt(rowData[col].red, rowData[col].green, rowData[col].blue);
-        display->drawPixel(col, row, convertedColor);
-    }
-}
-
-
 void setup()
 {
     Serial.begin(115200);
     delay(2000);
 
+    std::unique_ptr<LaskaKit::Epaper::Display> display;
     display.reset(new LaskaKit::Epaper::GDEY075T7(PIN_CS, PIN_DC, PIN_RST, PIN_BUSY, PIN_PWR));
-    // display.reset(new LaskaKit::Epaper::GDEY075T7(CS, DC, RST, BUSY, PWR));
     display->fullUpdate();
 
     // display_gfx.reset(new LaskaKit::Epaper::DisplayGFX(display));
@@ -144,7 +132,14 @@ void setup()
     client.getHeader(header, "Timestamp");
     Serial.println(header);
 
-    client.process(mycb);
+    client.process([&display](Pixel* rowData, uint16_t row){
+        for (int col = 0; col < 800; col++) {
+            // uint32_t color = rowData[col].red << 16 | rowData[col].green << 8 | rowData[col].blue;
+            // Serial.printf("row:%u col:%u R:%u G:%u B:%u -> C:%x\n", row, col, rowData[col].red, rowData[col].green, rowData[col].blue, color);
+            uint8_t convertedColor = rgb_to_4_gray_alt(rowData[col].red, rowData[col].green, rowData[col].blue);
+            display->drawPixel(col, row, convertedColor);
+        }
+    });
     Serial.printf("Download: %lu\n", millis() - start);
 
     start = millis();
