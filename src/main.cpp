@@ -275,6 +275,7 @@ void setup()
 
     WiFiManager wm;
     wm.setConfigPortalTimeout(300);
+    wm.setConnectTimeout(30);
     wm.setHostname("ESPINK");
 
     WiFiManagerParameter custom_display("display", "E-Paper display", "default type", 40);
@@ -317,16 +318,6 @@ void setup()
     String custom_display_param = custom_display.getValue();
     Serial.println("Custom parameters:");
     Serial.println("Display: " + custom_display_param);
-
-    // WiFi.begin(wifiSsid, wifiPass);
-    // while (WiFi.status() != WL_CONNECTED)
-    // {
-    //     delay(500);
-    //     Serial.print(".");
-    // }
-    // Serial.println();
-    // Serial.println("Connected");
-    // esp_wifi_set_ps(WIFI_PS_NONE);
 
     Serial.println(WiFi.macAddress());
 
