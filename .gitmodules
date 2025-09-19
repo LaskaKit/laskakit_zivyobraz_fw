@@ -4,3 +4,6 @@
 [submodule "lib/laskakit_zivyobraz_client"]
 	path = lib/laskakit_zivyobraz_client
 	url = git@github.com:LaskaKit/laskakit_zivyobraz_client.git
+[submodule "lib/QRCode"]
+	path = lib/QRCode
+	url = git@github.com:ricmoo/QRCode.git

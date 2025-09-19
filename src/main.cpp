@@ -1,5 +1,6 @@
 #include <Arduino.h>
 
+#include <qrcode.h>
 #include <laskakit_epaper.hpp>
 #include <espclient.hpp>
 
@@ -23,6 +24,35 @@ namespace {
 
 
 using namespace LaskaKit::ZivyObraz;
+
+
+void fillRect(std::unique_ptr<LaskaKit::Epaper::Display>& display, int x, int y, int width, int height, uint8_t color)
+{
+    for (int i = 0; i < width; i++) {
+        for (int j = 0; j < height; j++) {
+            display->drawPixel(x + i, y + j, color);
+        }
+    }
+}
+
+
+void display_qr(std::unique_ptr<LaskaKit::Epaper::Display>& display, int pos_x = 0, int pos_y = 0, int scale = 1)
+{
+    QRCode qrcode;
+    uint8_t qrcodeData[qrcode_getBufferSize(3)];
+    String qrstr = "WIFI:S:" + String(AP_SSID) + ";T:WPA;P:" + String(AP_PASS) + ";;";
+    qrcode_initText(&qrcode, qrcodeData, 3, ECC_LOW, qrstr.c_str());
+    
+    for (int y = 0; y < qrcode.size; y++) {
+        for (int x = 0; x < qrcode.size; x++) {
+            if (qrcode_getModule(&qrcode, x, y)) {
+                fillRect(display, pos_x + x * scale, pos_y + y * scale, scale, scale, 0x00);
+            } else {
+                fillRect(display, pos_x + x * scale, pos_y + y * scale, scale, scale, 0x11);
+            }
+        }
+  }
+}
 
 
 uint8_t rgb_to_4_gray_alt(uint8_t r, uint8_t g, uint8_t b) {
@@ -51,18 +81,20 @@ void setup()
 
     std::unique_ptr<LaskaKit::Epaper::Display> display;
     display.reset(new LaskaKit::Epaper::GDEY075T7(PIN_CS, PIN_DC, PIN_RST, PIN_BUSY, PIN_PWR));
-    display->fullUpdate();
+    
 
     WiFiManager wm;
     wm.setConfigPortalTimeout(300);
     wm.setConnectTimeout(30);
     wm.setHostname("ESPINK");
 
-    wm.setAPCallback([](WiFiManager* myWiFiManager) {
+    wm.setAPCallback([&display](WiFiManager* myWiFiManager) {
         Serial.println("Entered config mode");
         Serial.println(WiFi.softAPIP());
         Serial.println("WiFi Manager");
         Serial.println("Connect to: " + myWiFiManager->getConfigPortalSSID());
+        display_qr(display, 150, 80, 10);
+        display->fullUpdate();
     });
 
   
