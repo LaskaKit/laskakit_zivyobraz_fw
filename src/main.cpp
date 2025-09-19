@@ -4,6 +4,7 @@
 #include <espclient.hpp>
 
 #include <WiFi.h>
+#include <WiFiManager.h>
 #include <esp_wifi.h>
 #include <memory>
 
@@ -271,14 +272,60 @@ void setup()
     // display_gfx->drawChar(600, 10, 'I', 0, 0, 10);
     // display_gfx->drawChar(700, 10, 'T', 0, 0, 10);
 
-    WiFi.begin(wifiSsid, wifiPass);
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        delay(500);
-        Serial.print(".");
+
+    WiFiManager wm;
+    wm.setConfigPortalTimeout(300);
+    wm.setHostname("ESPINK");
+
+    WiFiManagerParameter custom_display("display", "E-Paper display", "default type", 40);
+    wm.addParameter(&custom_display);
+
+    wm.setAPCallback([](WiFiManager* myWiFiManager) {
+        Serial.println("Entered config mode");
+        Serial.println(WiFi.softAPIP());
+        Serial.println("WiFi Manager");
+        Serial.println("Connect to: " + myWiFiManager->getConfigPortalSSID());
+    });
+
+    wm.setSaveConfigCallback([]() {
+        Serial.println("Saving config");
+        Serial.println("WiFi connected!");
+        Serial.print("IP address: ");
+        Serial.println(WiFi.localIP());
+    });
+
+    bool shouldStartPortal = false;
+
+    if (shouldStartPortal) {
+        if (!wm.startConfigPortal("ESPINK-Setup", "123456789")) {
+            Serial.println("Failed to connect and hit timeout.");
+            ESP.restart();
+        }
+    } else {
+        if (!wm.autoConnect("ESPINK-Setup", "123456789")) {
+            Serial.println("Failed to connect, starting configuration portal");
+            if (!wm.startConfigPortal("ESPINK-Setup", "123456789")) {
+                Serial.println("Failed to connect and hit timeout.");
+                ESP.restart();
+            }
+        }
     }
-    Serial.println();
-    Serial.println("Connected");
+
+    Serial.println("Connected to WiFi!");
+    Serial.println("Local IP: " + WiFi.localIP().toString());
+
+    String custom_display_param = custom_display.getValue();
+    Serial.println("Custom parameters:");
+    Serial.println("Display: " + custom_display_param);
+
+    // WiFi.begin(wifiSsid, wifiPass);
+    // while (WiFi.status() != WL_CONNECTED)
+    // {
+    //     delay(500);
+    //     Serial.print(".");
+    // }
+    // Serial.println();
+    // Serial.println("Connected");
     // esp_wifi_set_ps(WIFI_PS_NONE);
 
     Serial.println(WiFi.macAddress());
