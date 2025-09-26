@@ -120,6 +120,9 @@ void setup()
     client.addParam("y", String(display->height()).c_str());
     client.addParam("c", ZIVYOBRAZ_COLOR_TYPE);
     client.addParam("fw", ZIVYOBRAZ_FIRMWARE_VERSION);
+    client.addParam("timestamp_check", "1");
+    client.addParam("ssid", WiFi.SSID().c_str());
+    client.addParam("rssi", std::to_string(WiFi.RSSI()).c_str());
 
     unsigned long start = millis();
     client.get();
