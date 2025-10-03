@@ -28,19 +28,19 @@ namespace {
 using namespace LaskaKit::ZivyObraz;
 
 
-void fillRect(std::unique_ptr<LaskaKit::Epaper::Display>& display, int x, int y, int width, int height, uint8_t color)
+void fillRect(LaskaKit::Epaper::Display& display, int x, int y, int width, int height, uint8_t color)
 {
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height; j++) {
-            display->drawPixel(x + i, y + j, color);
+            display.drawPixel(x + i, y + j, color);
         }
     }
 }
 
 
-void display_qr(std::unique_ptr<LaskaKit::Epaper::Display>& display, int pos_x = 0, int pos_y = 0, int scale = 1)
+void display_qr(LaskaKit::Epaper::Display& display, int pos_x = 0, int pos_y = 0, int scale = 1)
 {
-    QRCode qrcode;
+    static QRCode qrcode;
     uint8_t qrcodeData[qrcode_getBufferSize(3)];
     String qrstr = "WIFI:S:" + String(AP_SSID) + ";T:WPA;P:" + String(AP_PASS) + ";;";
     qrcode_initText(&qrcode, qrcodeData, 3, ECC_LOW, qrstr.c_str());
@@ -48,9 +48,9 @@ void display_qr(std::unique_ptr<LaskaKit::Epaper::Display>& display, int pos_x =
     for (int y = 0; y < qrcode.size; y++) {
         for (int x = 0; x < qrcode.size; x++) {
             if (qrcode_getModule(&qrcode, x, y)) {
-                fillRect(display, pos_x + x * scale, pos_y + y * scale, scale, scale, 0x00);
+                fillRect(display, pos_x + x * scale, pos_y + y * scale, scale, scale, 0b00);
             } else {
-                fillRect(display, pos_x + x * scale, pos_y + y * scale, scale, scale, 0x11);
+                fillRect(display, pos_x + x * scale, pos_y + y * scale, scale, scale, 0b11);
             }
         }
     }
@@ -65,13 +65,13 @@ uint8_t rgb_to_4_gray_alt(uint8_t r, uint8_t g, uint8_t b) {
     // Quantize to 4 levels (2 bits)
     // Map 0-255 range to 0-3 range
     if (gray < 64.1f) {        // 0-63   -> 0 (darkest)
-        return 0x11;
+        return 0b00;
     } else if (gray < 128.1f) { // 64-127 -> 1 (dark gray)
-        return 0x10;
+        return 0b01;
     } else if (gray < 192.1f) { // 128-191 -> 2 (light gray)
-        return 0x01;
+        return 0b10;
     } else {                   // 192-255 -> 3 (lightest)
-        return 0x00;
+        return 0b11;
     }
 }
 
@@ -81,22 +81,19 @@ void setup()
     Serial.begin(115200);
     delay(2000);
 
-    std::unique_ptr<LaskaKit::Epaper::Display> display;
-    display.reset(new LaskaKit::Epaper::GDEY075T7(PIN_CS, PIN_DC, PIN_RST, PIN_BUSY, PIN_PWR));
-    
-
-    WiFiManager wm;
+    static LaskaKit::Epaper::GDEY075T7 display = LaskaKit::Epaper::GDEY075T7(PIN_CS, PIN_DC, PIN_RST, PIN_BUSY, PIN_PWR);
+    static WiFiManager wm;
     wm.setConfigPortalTimeout(300);
     wm.setConnectTimeout(30);
     wm.setHostname("ESPINK");
 
-    wm.setAPCallback([&display](WiFiManager* myWiFiManager) {
+    wm.setAPCallback([](WiFiManager* myWiFiManager) {
         Serial.println("Entered config mode");
         Serial.println(WiFi.softAPIP());
         Serial.println("WiFi Manager");
         Serial.println("Connect to: " + myWiFiManager->getConfigPortalSSID());
         display_qr(display, 150, 80, 10);
-        display->fullUpdate();
+        display.fullUpdate();
     });
 
   
@@ -114,10 +111,20 @@ void setup()
     Serial.println("Local IP: " + WiFi.localIP().toString());
     Serial.println(WiFi.macAddress());
 
-    EspClient client(ZIVYOBRAZ_HOST);
+
+    auto drawCallback = [](Pixel* rowData, uint16_t row){
+        for (int col = 0; col < 800; col++) {
+            // uint32_t color = rowData[col].red << 16 | rowData[col].green << 8 | rowData[col].blue;
+            // Serial.printf("row:%u col:%u R:%u G:%u B:%u -> C:%x\n", row, col, rowData[col].red, rowData[col].green, rowData[col].blue, color);
+            uint8_t convertedColor = rgb_to_4_gray_alt(rowData[col].red, rowData[col].green, rowData[col].blue);
+            display.drawPixel(col, row, convertedColor);
+        }
+    };
+
+    static EspClient client(ZIVYOBRAZ_HOST, display.width(), display.height(), drawCallback);
     client.addParam("mac", WiFi.macAddress().c_str());
-    client.addParam("x", String(display->width()).c_str());
-    client.addParam("y", String(display->height()).c_str());
+    client.addParam("x", String(display.width()).c_str());
+    client.addParam("y", String(display.height()).c_str());
     client.addParam("c", ZIVYOBRAZ_COLOR_TYPE);
     client.addParam("fw", ZIVYOBRAZ_FIRMWARE_VERSION);
     client.addParam("timestamp_check", "1");
@@ -125,21 +132,12 @@ void setup()
     client.addParam("rssi", std::to_string(WiFi.RSSI()).c_str());
 
     unsigned long start = millis();
+
     client.get();
-
-
-    client.process([&display](Pixel* rowData, uint16_t row){
-        for (int col = 0; col < 800; col++) {
-            // uint32_t color = rowData[col].red << 16 | rowData[col].green << 8 | rowData[col].blue;
-            // Serial.printf("row:%u col:%u R:%u G:%u B:%u -> C:%x\n", row, col, rowData[col].red, rowData[col].green, rowData[col].blue, color);
-            uint8_t convertedColor = rgb_to_4_gray_alt(rowData[col].red, rowData[col].green, rowData[col].blue);
-            display->drawPixel(col, row, convertedColor);
-        }
-    });
     Serial.printf("Download time: %lu ms\n", millis() - start);
 
     start = millis();
-    display->fullUpdate();
+    display.fullUpdate();
     Serial.printf("Update time: %lu ms\n", millis() - start);
 
     // Process headers
