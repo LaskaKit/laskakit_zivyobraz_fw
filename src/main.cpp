@@ -28,6 +28,15 @@ namespace {
 using namespace LaskaKit::ZivyObraz;
 
 
+float readBattery()
+{
+    pinMode(PIN_VBAT, INPUT);
+    uint32_t milliVolts = analogReadMilliVolts(PIN_VBAT);
+    float voltage = (milliVolts / 1000.0) * VBAT_DIVIDER_RATIO;
+    return voltage;
+}
+
+
 void fillRect(LaskaKit::Epaper::Display& display, int x, int y, int width, int height, uint8_t color)
 {
     for (int i = 0; i < width; i++) {
@@ -80,7 +89,6 @@ void setup()
 {
     Serial.begin(115200);
     delay(2000);
-
     static LaskaKit::Epaper::GDEY075T7 display = LaskaKit::Epaper::GDEY075T7(PIN_CS, PIN_DC, PIN_RST, PIN_BUSY, PIN_PWR);
     static WiFiManager wm;
     wm.setConfigPortalTimeout(300);
@@ -130,6 +138,7 @@ void setup()
     client.addParam("timestamp_check", "1");
     client.addParam("ssid", WiFi.SSID().c_str());
     client.addParam("rssi", std::to_string(WiFi.RSSI()).c_str());
+    client.addParam("v", std::to_string(readBattery()).c_str());
 
     unsigned long start = millis();
 
