@@ -34,7 +34,7 @@ jobs:
       run: pio run -e ${{ matrix.environment }}
     
     - name: Upload firmware artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: firmware-${{ matrix.environment }}
         path: |
@@ -44,7 +44,7 @@ jobs:
       if: always()
     
     - name: Upload merged firmware
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: firmware-${{ matrix.environment }}-merged
         path: .pio/build/${{ matrix.environment }}/*_merged.bin
