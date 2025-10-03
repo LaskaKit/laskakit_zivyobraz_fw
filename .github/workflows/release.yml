@@ -39,9 +39,6 @@ jobs:
     - name: Prepare release artifacts
       run: |
         mkdir -p release/
-        cp .pio/build/*/firmware.bin release/
-        cp .pio/build/*/firmware_merged.bin release/
-        # Rename files to include environment name
         for env in espink_v2-6 espink_v3-5; do
           if [ -f ".pio/build/$env/firmware.bin" ]; then
             cp ".pio/build/$env/firmware.bin" "release/${env}-firmware.bin"
