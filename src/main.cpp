@@ -27,6 +27,31 @@ namespace {
 
 using namespace LaskaKit::ZivyObraz;
 
+#include <Adafruit_SHT4x.h>
+Adafruit_SHT4x sht4 = Adafruit_SHT4x();
+
+struct TempHumReading
+{
+    float temperature;
+    float relativeHumidity;
+};
+
+TempHumReading readSHT40()
+{
+    TempHumReading thr;
+    if (sht4.begin()) {
+        sht4.setPrecision(SHT4X_LOW_PRECISION);
+        sht4.setHeater(SHT4X_NO_HEATER);
+        sensors_event_t hum, temp;
+        sht4.getEvent(&hum, &temp);
+        thr.temperature = temp.temperature;
+        thr.relativeHumidity = hum.relative_humidity;
+    } else {
+        Serial.println("SHT4x NOT FOUND");
+    }
+    return thr;
+}
+
 
 float readBattery()
 {
@@ -129,6 +154,8 @@ void setup()
         }
     };
 
+    TempHumReading thr = readSHT40();
+
     static EspClient client(ZIVYOBRAZ_HOST, display.width(), display.height(), drawCallback);
     client.addParam("mac", WiFi.macAddress().c_str());
     client.addParam("x", String(display.width()).c_str());
@@ -139,6 +166,8 @@ void setup()
     client.addParam("ssid", WiFi.SSID().c_str());
     client.addParam("rssi", std::to_string(WiFi.RSSI()).c_str());
     client.addParam("v", std::to_string(readBattery()).c_str());
+    client.addParam("temp", std::to_string(thr.temperature).c_str());
+    client.addParam("hum", std::to_string(thr.relativeHumidity).c_str());
 
     unsigned long start = millis();
 
