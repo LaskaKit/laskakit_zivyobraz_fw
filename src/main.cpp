@@ -17,7 +17,7 @@ namespace {
     constexpr const char* ZIVYOBRAZ_COLOR_TYPE = "4G";
 
     constexpr const char* AP_SSID = "ESPINK-Setup";
-    constexpr const char* AP_PASS = "123456789";
+    constexpr const char* AP_PASS = "zivyobraz";
 
     constexpr size_t DEEP_SLEEP_TIME_S = 120;
 }
