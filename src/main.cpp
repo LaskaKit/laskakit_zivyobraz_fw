@@ -13,7 +13,8 @@
 // ZIVYOBRAZ CLIENT PARAMS
 namespace {
     constexpr const char* ZIVYOBRAZ_HOST = "https://cdn.zivyobraz.eu";
-    constexpr const char* ZIVYOBRAZ_FIRMWARE_VERSION = "2.5";
+    constexpr const char* ZIVYOBRAZ_FIRMWARE_VERSION = "2.4";
+    constexpr const char* ZIVYOBRAZ_FIRMWARE_TYPE = "LaskaKit-0.1";
     constexpr const char* ZIVYOBRAZ_COLOR_TYPE = "4G";
 
     constexpr const char* AP_SSID = "ESPINK-Setup";
@@ -162,6 +163,7 @@ void setup()
     client.addParam("y", String(display.height()).c_str());
     client.addParam("c", ZIVYOBRAZ_COLOR_TYPE);
     client.addParam("fw", ZIVYOBRAZ_FIRMWARE_VERSION);
+    client.addParam("fwType", ZIVYOBRAZ_FIRMWARE_TYPE);
     client.addParam("timestamp_check", "1");
     client.addParam("ssid", WiFi.SSID().c_str());
     client.addParam("rssi", std::to_string(WiFi.RSSI()).c_str());
@@ -179,16 +181,25 @@ void setup()
     Serial.printf("Update time: %lu ms\n", millis() - start);
 
     // Process headers
-    char headerValue[20];
+    char headerValue[20];  // tmp buffer
+    int sleepTimeMinutes = 0;
+    int sleepTimeSeconds = 0;
     client.getHeader(headerValue, "Sleep");
-    Serial.print("Deep sleep for: ");
-    Serial.print(headerValue);
-    Serial.print(" minutes -> ");
+    sleepTimeMinutes = String(headerValue).toInt();
+    client.getHeader(headerValue, "SleepSeonds");
+    sleepTimeSeconds = String(headerValue).toInt();
 
-    int sleepTimeS = String(headerValue).toInt() * 60;
-    Serial.print(String(sleepTimeS).toInt());
-    Serial.println(" seconds");
-    esp_sleep_enable_timer_wakeup(sleepTimeS * 1000000);
+
+    if (sleepTimeSeconds > 0) {
+        Serial.printf("Deep sleep: Using SleepSeconds: %d s\n", sleepTimeSeconds);
+        esp_sleep_enable_timer_wakeup(sleepTimeSeconds * 1000000);
+    } else if (sleepTimeMinutes > 0) {
+        Serial.printf("Deep sleep: Using Sleep: %d m\n", sleepTimeMinutes);
+        esp_sleep_enable_timer_wakeup(sleepTimeMinutes * 60 * 1000000);
+    } else {
+        Serial.printf("Deep sleep: Using Default: %d s\n", DEEP_SLEEP_TIME_S);
+        esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME_S * 1000000);
+    }
     delay(100);
     esp_deep_sleep_start();
 }
