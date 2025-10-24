@@ -1,9 +1,9 @@
 [submodule "lib/laskakit_epaper"]
 	path = lib/laskakit_epaper
-	url = git@github.com:LaskaKit/laskakit_epaper.git
+	url = https://github.com/LaskaKit/laskakit_epaper.git
 [submodule "lib/laskakit_zivyobraz_client"]
 	path = lib/laskakit_zivyobraz_client
-	url = git@github.com:LaskaKit/laskakit_zivyobraz_client.git
+	url = https://github.com/LaskaKit/laskakit_zivyobraz_client.git
 [submodule "lib/QRCode"]
 	path = lib/QRCode
-	url = git@github.com:ricmoo/QRCode.git
+	url = https://github.com/ricmoo/QRCode.git
