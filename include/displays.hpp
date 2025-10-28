@@ -88,7 +88,7 @@ std::function<void(T_COLOR *decodedRow, uint16_t rowIdx)> createDrawCallback(T_D
     #define DISPLAY_T LaskaKit::Epaper::None
     #define COLOR_SPACE uint8_t
     #define COMPRESSION ZCompressionType::Z2
-    #define DISPLAY_PALETTE makeStandardPalette(ZColorType::BW)
+    #define DISPLAY_PALETTE LaskaKit::ZivyObraz::ZPalette<uint8_t>({0, 1})
     #define DISPLAY_COLOR_TYPE "BW"
     
 #endif
