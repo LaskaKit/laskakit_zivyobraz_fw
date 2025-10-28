@@ -1,21 +1,23 @@
-#include <Arduino.h>
-
-#include <qrcode.h>
-#include <laskakit_epaper.hpp>
-#include <espclient.hpp>
-
-#include <WiFi.h>
-#include <WiFiManager.h>
-#include <esp_wifi.h>
 #include <memory>
+#include <Arduino.h>
+#include <WiFi.h>
+#include <esp_wifi.h>
+#include <qrcode.h>
+#include <WiFiManager.h>
 
+
+#include "boards.hpp"
+
+// #define DISPLAY_GDEY075T7
+#include "displays.hpp"
+#include "espclient.hpp"
+#include "sensor.hpp"
 
 // ZIVYOBRAZ CLIENT PARAMS
 namespace {
     constexpr const char* ZIVYOBRAZ_HOST = "https://cdn.zivyobraz.eu";
     constexpr const char* ZIVYOBRAZ_FIRMWARE_VERSION = "2.4";
     constexpr const char* ZIVYOBRAZ_FIRMWARE_TYPE = "LaskaKit-0.1";
-    constexpr const char* ZIVYOBRAZ_COLOR_TYPE = "4G";
 
     constexpr const char* AP_SSID = "ESPINK-Setup";
     constexpr const char* AP_PASS = "zivyobraz";
@@ -28,37 +30,28 @@ namespace {
 
 using namespace LaskaKit::ZivyObraz;
 
-#include <Adafruit_SHT4x.h>
-Adafruit_SHT4x sht4 = Adafruit_SHT4x();
 
-struct TempHumReading
-{
-    float temperature;
-    float relativeHumidity;
-};
 
-TempHumReading readSHT40()
+// power on peripherals (I2C bus, display, ...)
+void powerOn()
 {
-    TempHumReading thr;
-    if (sht4.begin()) {
-        sht4.setPrecision(SHT4X_LOW_PRECISION);
-        sht4.setHeater(SHT4X_NO_HEATER);
-        sensors_event_t hum, temp;
-        sht4.getEvent(&hum, &temp);
-        thr.temperature = temp.temperature;
-        thr.relativeHumidity = hum.relative_humidity;
-    } else {
-        Serial.println("SHT4x NOT FOUND");
-    }
-    return thr;
+    pinMode(PIN_PWR, OUTPUT);
+    digitalWrite(PIN_PWR, HIGH);
+}
+
+// power off peripherals (I2C bus, display, ...)
+void powerOff()
+{
+    pinMode(PIN_PWR, OUTPUT);
+    digitalWrite(PIN_PWR, LOW);
 }
 
 
-float readBattery()
+double readBattery()
 {
     pinMode(PIN_VBAT, INPUT);
     uint32_t milliVolts = analogReadMilliVolts(PIN_VBAT);
-    float voltage = (milliVolts / 1000.0) * VBAT_DIVIDER_RATIO;
+    double voltage = (milliVolts / 1000.0) * VBAT_DIVIDER_RATIO;
     return voltage;
 }
 
@@ -92,30 +85,15 @@ void display_qr(LaskaKit::Epaper::Display& display, int pos_x = 0, int pos_y = 0
 }
 
 
-uint8_t rgb_to_4_gray_alt(uint8_t r, uint8_t g, uint8_t b) {
-    // Convert RGB to grayscale using standard luminance formula
-    // This weights the channels based on human eye sensitivity
-    float gray = 0.299f * r + 0.587f * g + 0.114f * b;
-
-    // Quantize to 4 levels (2 bits)
-    // Map 0-255 range to 0-3 range
-    if (gray < 64.1f) {        // 0-63   -> 0 (darkest)
-        return 0b00;
-    } else if (gray < 128.1f) { // 64-127 -> 1 (dark gray)
-        return 0b01;
-    } else if (gray < 192.1f) { // 128-191 -> 2 (light gray)
-        return 0b10;
-    } else {                   // 192-255 -> 3 (lightest)
-        return 0b11;
-    }
-}
-
-
 void setup()
 {
+    powerOn();
+    // set I2C pins
+    Wire.setPins(PIN_I2C_SDA, PIN_I2C_SCL);
     Serial.begin(115200);
-    delay(2000);
-    static LaskaKit::Epaper::GDEY075T7 display = LaskaKit::Epaper::GDEY075T7(PIN_CS, PIN_DC, PIN_RST, PIN_BUSY, PIN_PWR);
+
+    static DISPLAY_T display = DISPLAY_T();
+
     static WiFiManager wm;
     wm.setConfigPortalTimeout(300);
     wm.setConnectTimeout(30);
@@ -130,7 +108,6 @@ void setup()
         display.fullUpdate();
     });
 
-  
     if (!wm.autoConnect(AP_SSID, AP_PASS)) {
         Serial.println("Failed to connect, starting configuration portal");
         if (!wm.startConfigPortal(AP_SSID, AP_PASS)) {
@@ -141,43 +118,53 @@ void setup()
         }
     }
 
-    Serial.println("Connected to WiFi!");
+    Serial.println("\nConnected to WiFi!");
     Serial.println("Local IP: " + WiFi.localIP().toString());
     Serial.println(WiFi.macAddress());
 
+    SensorReading sensorReading = readSensors();
 
-    auto drawCallback = [](Pixel* rowData, uint16_t row){
-        for (int col = 0; col < 800; col++) {
-            // uint32_t color = rowData[col].red << 16 | rowData[col].green << 8 | rowData[col].blue;
-            // Serial.printf("row:%u col:%u R:%u G:%u B:%u -> C:%x\n", row, col, rowData[col].red, rowData[col].green, rowData[col].blue, color);
-            uint8_t convertedColor = rgb_to_4_gray_alt(rowData[col].red, rowData[col].green, rowData[col].blue);
-            display.drawPixel(col, row, convertedColor);
-        }
-    };
+    StreamingZDEC<COMPRESSION, COLOR_SPACE> decoder(display.width(), display.height());
+    COLOR_SPACE rowBuffer[display.width()];
 
-    TempHumReading thr = readSHT40();
+    decoder.setPalette(DISPLAY_PALETTE);
+    decoder.setDecodeBuffer(rowBuffer, display.width());
+    decoder.setRowCallback(createDrawCallback<COLOR_SPACE, DISPLAY_T>(display));
 
-    static EspClient client(ZIVYOBRAZ_HOST, display.width(), display.height(), drawCallback);
+    static EspClient<StreamingZDEC<COMPRESSION, COLOR_SPACE>> client(ZIVYOBRAZ_HOST, display.width(), display.height(), decoder);
     client.addParam("mac", WiFi.macAddress().c_str());
     client.addParam("x", String(display.width()).c_str());
     client.addParam("y", String(display.height()).c_str());
-    client.addParam("c", ZIVYOBRAZ_COLOR_TYPE);
+    client.addParam("c", DISPLAY_COLOR_TYPE);
     client.addParam("fw", ZIVYOBRAZ_FIRMWARE_VERSION);
     client.addParam("fwType", ZIVYOBRAZ_FIRMWARE_TYPE);
     client.addParam("timestamp_check", "1");
     client.addParam("ssid", WiFi.SSID().c_str());
     client.addParam("rssi", std::to_string(WiFi.RSSI()).c_str());
     client.addParam("v", std::to_string(readBattery()).c_str());
-    client.addParam("temp", std::to_string(thr.temperature).c_str());
-    client.addParam("hum", std::to_string(thr.relativeHumidity).c_str());
+    if (sensorReading.flag & SensorReadingFlag::TEMPERATURE) {
+        client.addParam("temp", std::to_string(sensorReading.temperature).c_str());
+    }
+    if (sensorReading.flag & SensorReadingFlag::RELATIVE_HUMIDITY) {
+        client.addParam("hum", std::to_string(sensorReading.relativeHumidity).c_str());
+    }
+    if (sensorReading.flag & SensorReadingFlag::PRESSURE) {
+        client.addParam("pres", std::to_string(sensorReading.pressure).c_str());
+    }
+    if (sensorReading.flag & SensorReadingFlag::CO2) {
+        client.addParam("pres", std::to_string(sensorReading.co2).c_str());
+    }
+
 
     unsigned long start = millis();
 
     client.get();
+    // TODO shutdowm WiFI
     Serial.printf("Download time: %lu ms\n", millis() - start);
 
     start = millis();
     display.fullUpdate();
+    powerOff();
     Serial.printf("Update time: %lu ms\n", millis() - start);
 
     // Process headers
