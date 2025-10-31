@@ -55,10 +55,27 @@ std::function<void(T_COLOR *decodedRow, uint16_t rowIdx)> createDrawCallback(T_D
 #elif defined DISPLAY_GDEY1248F51
     #include "laskakit_GDEY1248F51.hpp"
     #define DISPLAY_T LaskaKit::Epaper::GDEY1248F51
-    #define COLOR_SPACE ZColor
-    #define COMPRESSION ZCompressionType::Z2
+    #define COLOR_SPACE LaskaKit::ZivyObraz::ZColor
+    #define COMPRESSION LaskaKit::ZivyObraz::ZCompressionType::Z2
     #define DISPLAY_PALETTE makeStandardPalette(ZColorType::C4)
     #define DISPLAY_COLOR_TYPE "4C"
+
+    template<>
+    uint8_t convertColor<COLOR_SPACE, DISPLAY_T>(COLOR_SPACE color)
+    {
+        switch (color) {
+            case COLOR_SPACE::White:
+                return 0b01;
+            case COLOR_SPACE::Black:
+                return 0b00;
+            case COLOR_SPACE::Red:
+                return 0b11;
+            case COLOR_SPACE::Yellow:
+                return 0b10;
+            default:
+                return 0b00;
+        }
+    }
 
 #elif defined DISPLAY_E2741FS081
     #include "laskakit_E2741FS081.hpp"
@@ -83,11 +100,34 @@ std::function<void(T_COLOR *decodedRow, uint16_t rowIdx)> createDrawCallback(T_D
         }
     }
 
+#elif defined DISPLAY_E2741CS0B2
+    // same code as RBW version, just does not display red
+    #include "laskakit_E2741FS081.hpp"
+    #define DISPLAY_T LaskaKit::Epaper::E2741FS081
+    #define COLOR_SPACE LaskaKit::ZivyObraz::ZColor
+    #define COMPRESSION LaskaKit::ZivyObraz::ZCompressionType::Z2
+    #define DISPLAY_PALETTE makeStandardPalette(ZColorType::BW)
+    #define DISPLAY_COLOR_TYPE "BW"
+
+    template<>
+    uint8_t convertColor<COLOR_SPACE, DISPLAY_T>(COLOR_SPACE color)
+    {
+        switch (color) {
+            case COLOR_SPACE::White:
+                return 0b00;
+            case COLOR_SPACE::Black:
+                return 0b10;
+            default:
+                return 0b10;
+        }
+    }
+
+
 #else
     #include "laskakit_none.hpp"    
     #define DISPLAY_T LaskaKit::Epaper::None
     #define COLOR_SPACE uint8_t
-    #define COMPRESSION ZCompressionType::Z2
+    #define COMPRESSION LaskaKit::ZivyObraz::ZCompressionType::Z2
     #define DISPLAY_PALETTE LaskaKit::ZivyObraz::ZPalette<uint8_t>({0, 1})
     #define DISPLAY_COLOR_TYPE "BW"
     
