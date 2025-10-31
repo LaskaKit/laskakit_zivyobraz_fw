@@ -17,7 +17,7 @@ template<class T_COLOR, class T_DISPLAY>
 std::function<void(T_COLOR *decodedRow, uint16_t rowIdx)> createDrawCallback(T_DISPLAY& display)
 {
     return [&display](T_COLOR* rowData, uint16_t row){
-        for (int col = 0; col < display.width(); col++) {
+        for (int col = 0; col < T_DISPLAY::WIDTH; col++) {
             uint8_t convertedColor = convertColor<T_COLOR, T_DISPLAY>(rowData[col]);
             display.drawPixel(col, row, convertedColor);
         }

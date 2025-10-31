@@ -17,7 +17,7 @@
 namespace {
     constexpr const char* ZIVYOBRAZ_HOST = "https://cdn.zivyobraz.eu";
     constexpr const char* ZIVYOBRAZ_FIRMWARE_VERSION = "2.4";
-    constexpr const char* ZIVYOBRAZ_FIRMWARE_TYPE = "LaskaKit-0.1";
+    constexpr const char* ZIVYOBRAZ_FIRMWARE_TYPE = "LaskaKit-0.2.0";
 
     constexpr const char* AP_SSID = "ESPINK-Setup";
     constexpr const char* AP_PASS = "zivyobraz";
@@ -123,18 +123,19 @@ void setup()
     Serial.println(WiFi.macAddress());
 
     SensorReading sensorReading = readSensors();
+    printSensors(sensorReading);
 
-    StreamingZDEC<COMPRESSION, COLOR_SPACE> decoder(display.width(), display.height());
-    COLOR_SPACE rowBuffer[display.width()];
+    StreamingZDEC<COMPRESSION, COLOR_SPACE> decoder(DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT);
+    static COLOR_SPACE rowBuffer[DISPLAY_T::WIDTH];
 
     decoder.setPalette(DISPLAY_PALETTE);
-    decoder.setDecodeBuffer(rowBuffer, display.width());
+    decoder.setDecodeBuffer(rowBuffer, DISPLAY_T::WIDTH);
     decoder.setRowCallback(createDrawCallback<COLOR_SPACE, DISPLAY_T>(display));
 
-    static EspClient<StreamingZDEC<COMPRESSION, COLOR_SPACE>> client(ZIVYOBRAZ_HOST, display.width(), display.height(), decoder);
+    static EspClient<StreamingZDEC<COMPRESSION, COLOR_SPACE>> client(ZIVYOBRAZ_HOST, DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT, decoder);
     client.addParam("mac", WiFi.macAddress().c_str());
-    client.addParam("x", String(display.width()).c_str());
-    client.addParam("y", String(display.height()).c_str());
+    client.addParam("x", String(DISPLAY_T::WIDTH).c_str());
+    client.addParam("y", String(DISPLAY_T::HEIGHT).c_str());
     client.addParam("c", DISPLAY_COLOR_TYPE);
     client.addParam("fw", ZIVYOBRAZ_FIRMWARE_VERSION);
     client.addParam("fwType", ZIVYOBRAZ_FIRMWARE_TYPE);
@@ -142,17 +143,27 @@ void setup()
     client.addParam("ssid", WiFi.SSID().c_str());
     client.addParam("rssi", std::to_string(WiFi.RSSI()).c_str());
     client.addParam("v", std::to_string(readBattery()).c_str());
-    if (sensorReading.flag & SensorReadingFlag::TEMPERATURE) {
-        client.addParam("temp", std::to_string(sensorReading.temperature).c_str());
-    }
-    if (sensorReading.flag & SensorReadingFlag::RELATIVE_HUMIDITY) {
-        client.addParam("hum", std::to_string(sensorReading.relativeHumidity).c_str());
-    }
-    if (sensorReading.flag & SensorReadingFlag::PRESSURE) {
-        client.addParam("pres", std::to_string(sensorReading.pressure).c_str());
-    }
-    if (sensorReading.flag & SensorReadingFlag::CO2) {
-        client.addParam("pres", std::to_string(sensorReading.co2).c_str());
+
+    if (sensorReading.flag & Sensor::_SHT4x) {
+        client.addParam("temp", std::to_string(sensorReading.sht.temperature).c_str());
+        client.addParam("hum", std::to_string(sensorReading.sht.humidity).c_str());
+    } else if (sensorReading.flag & Sensor::_BME280) {
+        client.addParam("temp", std::to_string(sensorReading.bme.temperature).c_str());
+        client.addParam("hum", std::to_string(sensorReading.bme.humidity).c_str());
+        client.addParam("pres", std::to_string(sensorReading.bme.pressure).c_str());
+    } else if (sensorReading.flag & Sensor::_SCD4x) {
+        client.addParam("temp", std::to_string(sensorReading.scd.temperature).c_str());
+        client.addParam("hum", std::to_string(sensorReading.scd.humidity).c_str());
+        client.addParam("pres", std::to_string(sensorReading.scd.co2).c_str());
+    } else if (sensorReading.flag & Sensor::_STCC4) {
+        client.addParam("temp", std::to_string(sensorReading.stcc4.temperature).c_str());
+        client.addParam("hum", std::to_string(sensorReading.stcc4.humidity).c_str());
+        client.addParam("pres", std::to_string(sensorReading.stcc4.co2).c_str());
+    } else if (sensorReading.flag & Sensor::_SGP41) {
+        client.addParam("temp", std::to_string(sensorReading.sgp41.nox).c_str());
+        client.addParam("hum", std::to_string(sensorReading.sgp41.voc).c_str());
+    } else if (sensorReading.flag & Sensor::_BH1750) {
+        client.addParam("temp", std::to_string(sensorReading.bh1750.lux).c_str());
     }
 
 
