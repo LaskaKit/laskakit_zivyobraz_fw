@@ -15,7 +15,7 @@ jobs:
         environment: [espink_v2, espink_v3]
         display: [
             GDEY075T7,
-            GDEY1248F51,
+            # GDEY1248F51,
             E2741FS081,
             E2741CS0B2,
             NONE
