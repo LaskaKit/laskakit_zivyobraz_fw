@@ -14,10 +14,11 @@ jobs:
       matrix:
         environment: [espink_v2, espink_v3]
         display: [
-            DISPLAY_GDEY075T7,
-            # DISPLAY_GDEY1248F51,
-            DISPLAY_E2741FS081,
-            DISPLAY_NONE
+            GDEY075T7,
+            GDEY1248F51,
+            E2741FS081,
+            E2741CS0B2,
+            NONE
           ]
     
     steps:
@@ -45,12 +46,12 @@ jobs:
         pip install platformio
     
     - name: Build firmware
-      run: DISPLAY_TYPE=${{ matrix.display }} pio run -e ${{ matrix.environment }}
+      run: DISPLAY_TYPE=DISPLAY_${{ matrix.display }} pio run -e ${{ matrix.environment }}
     
     - name: Upload firmware artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: fw_${{ matrix.environment }}_${{ matrix.display }}
+        name: ZO_${{ matrix.environment }}_${{ matrix.display }}_0.2.0
         path: |
           .pio/build/${{ matrix.environment }}/firmware.bin
           .pio/build/${{ matrix.environment }}/firmware_merged.bin
