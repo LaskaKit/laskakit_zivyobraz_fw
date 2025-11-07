@@ -52,6 +52,28 @@ std::function<void(T_COLOR *decodedRow, uint16_t rowIdx)> createDrawCallback(T_D
         }
     }
 
+#elif defined DISPLAY_GDEY075Z08
+    #include "laskakit_GDEY075Z08.hpp"
+    #define DISPLAY_T LaskaKit::Epaper::GDEY075Z08
+    #define COLOR_SPACE LaskaKit::ZivyObraz::ZColor
+    #define COMPRESSION LaskaKit::ZivyObraz::ZCompressionType::Z2
+    #define DISPLAY_PALETTE makeStandardPalette(ZColorType::RBW)
+    #define DISPLAY_COLOR_TYPE "RBW"
+
+    template<>
+    uint8_t convertColor<COLOR_SPACE, DISPLAY_T>(COLOR_SPACE color)
+    {
+        switch (color) {
+            case COLOR_SPACE::White:
+                return 0b00;
+            case COLOR_SPACE::Black:
+                return 0b10;
+            case COLOR_SPACE::Red:
+                return 0b01;
+            default:
+                return 0b10;
+        }
+    }
 #elif defined DISPLAY_GDEY1248F51
     #include "laskakit_GDEY1248F51.hpp"
     #define DISPLAY_T LaskaKit::Epaper::GDEY1248F51
