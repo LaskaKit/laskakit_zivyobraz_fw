@@ -180,11 +180,11 @@ void setup()
 
     // Process headers
     char headerValue[20];  // tmp buffer
-    int sleepTimeMinutes = 0;
-    int sleepTimeSeconds = 0;
+    uint64_t sleepTimeMinutes = 0;
+    uint64_t sleepTimeSeconds = 0;
     client.getHeader(headerValue, "Sleep");
     sleepTimeMinutes = String(headerValue).toInt();
-    client.getHeader(headerValue, "SleepSeonds");
+    client.getHeader(headerValue, "SleepSeconds");
     sleepTimeSeconds = String(headerValue).toInt();
 
 
