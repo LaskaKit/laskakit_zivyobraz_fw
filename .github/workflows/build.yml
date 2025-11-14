@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        environment: [espink_v2, espink_v3]
+        environment: [espink-v2, espink-v3]
         display: [
             GDEY075T7,
             # GDEY1248F51,
