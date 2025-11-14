@@ -17,7 +17,7 @@
 namespace {
     constexpr const char* ZIVYOBRAZ_HOST = "https://cdn.zivyobraz.eu";
     constexpr const char* ZIVYOBRAZ_FIRMWARE_VERSION = "2.4";
-    constexpr const char* ZIVYOBRAZ_FIRMWARE_TYPE = "LaskaKit-0.2.0";
+    constexpr const char* ZIVYOBRAZ_FIRMWARE_TYPE = VERSION;
 
     constexpr const char* AP_SSID = "ESPINK-Setup";
     constexpr const char* AP_PASS = "zivyobraz";
