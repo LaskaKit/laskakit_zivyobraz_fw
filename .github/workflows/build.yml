@@ -61,6 +61,7 @@ jobs:
 
     - name: Rename binaries
       run: |
+        mkdir -p artifacts
         cp .pio/build/${{ matrix.environment }}/firmware_merged.bin \
           artifacts/zo_${{ matrix.environment }}_${{ matrix.display }}_${{ steps.version.outputs.version }}
 
