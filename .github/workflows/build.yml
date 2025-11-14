@@ -18,8 +18,8 @@ jobs:
         display: [
             GDEY075T7,
             # GDEY1248F51,
-            E2741FS081,
-            E2741CS0B2,
+            # E2741FS081,
+            # E2741CS0B2,
             NONE
           ]
 
@@ -72,3 +72,20 @@ jobs:
         path: artifacts/zo_${{ matrix.environment }}_${{ matrix.display }}_${{ steps.version.outputs.version }}
         retention-days: 14
       if: success()
+
+  make_artifacts:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all fw files
+        uses: actions/download-artifacts@v4
+        with:
+          pattern: zo_*
+          merge-multiple: true
+          path: artifacts
+
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifacts@v4
+        with:
+          name: zo_espink
+          path: artifacts/
