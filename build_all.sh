@@ -7,7 +7,11 @@ DISPLAYS=$(grep '^#.*DISPLAY_' include/displays.hpp | cut -d '_' -f 2 | tr '\n' 
 
 for BOARD in $BOARDS; do
     for DISPLAY in $DISPLAYS; do
-        echo "Building Zivyobraz for $DISPLAY $BOARD"
+        if [ "$BOARD" == "espink-v2" ] && [ "$DISPLAY" == "GDEY1248F51" ]; then
+            echo "Skipping $BOARD $DISPLAY"
+            continue
+        fi
+        echo "Building Zivyobraz for $BOARD $DISPLAY"
         DISPLAY_TYPE="DISPLAY_$DISPLAY" pio run -e "$BOARD"
 		if [ $? -ne 0 ]; then
 			exit 1
