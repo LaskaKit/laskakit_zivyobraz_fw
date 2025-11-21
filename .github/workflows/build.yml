@@ -38,7 +38,7 @@ jobs:
 
     - name: Build firmware
       run: |
-        build_all.sh
+        ./build_all.sh
 
     - name: Upload firmware artifacts
       uses: actions/upload-artifact@v4
