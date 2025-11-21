@@ -14,6 +14,17 @@ Should work on other espink_v2.x and espink_v3.x but it is not tested.
 - E2741CS0B2
 - NONE
 
+## Sensors
+
+All sensors are detected automatically. It is even possible to daisy chain them but for use with zivyobraz use just one. `temp`, `hum` and `pres` url params are used for exporting values to zivyobraz.
+
+- [SHT40](https://www.laskakit.cz/laskakit-sht40-senzor-teploty-a-vlhkosti-vzduchu/)
+- [BME280](https://www.laskakit.cz/arduino-senzor-tlaku--teploty-a-vlhkosti-bme280/)
+- [SCD41](https://www.laskakit.cz/laskakit-scd41-senzor-co2--teploty-a-vlhkosti-vzduchu/) [pres=co2]
+- [STCC4](https://www.laskakit.cz/laskakit-stcc4-senzor-co2--teploty-a-vlhkosti-vzduchu/) [pres=co2]
+- [SGP41](https://www.laskakit.cz/laskakit-sgp41-voc-a-nox-senzor-kvality-ovzdusi/) [temp=nox, hum=voc]
+- [BH1750](https://www.laskakit.cz/laskakit-bh1750-snimac-intenzity-osvetleni/) [temp=lux]
+
 # How to build
 
 Make sure you have synced submodules:
