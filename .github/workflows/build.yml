@@ -12,29 +12,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        environment: [espink-v2, espink-v3]
-        display: [
-            GDEY075T7,
-            # GDEY1248F51,
-            # E2741FS081,
-            # E2741CS0B2,
-            NONE
-          ]
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         submodules: recursive
-
-    - name: Extract version from platformio.ini
-      id: version
-      run: |
-        VERSION=$(grep  'version = ' platformio.ini | tr -d ' ' | cut -d '=' -f2 | tr '.' '-')
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "Extracted version: $VERSION"
 
     - name: Use cache
       uses: actions/cache@v4
@@ -56,36 +38,12 @@ jobs:
 
     - name: Build firmware
       run: |
-        echo "Building version ${{ steps.version.outputs.version }}"
-        DISPLAY_TYPE=DISPLAY_${{ matrix.display }} pio run -e ${{ matrix.environment }}
-
-    - name: Rename binaries
-      run: |
-        mkdir -p artifacts
-        cp .pio/build/${{ matrix.environment }}/firmware_merged.bin \
-          artifacts/zo_${{ matrix.environment }}_${{ matrix.display }}_${{ steps.version.outputs.version }}
+        build_all.sh
 
     - name: Upload firmware artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: zo_${{ matrix.environment }}_${{ matrix.display }}_${{ steps.version.outputs.version }}
-        path: artifacts/zo_${{ matrix.environment }}_${{ matrix.display }}_${{ steps.version.outputs.version }}
+        name: laskakit_zivyobraz_fw
+        path: artifacts/
         retention-days: 14
       if: success()
-
-  make_artifacts:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all fw files
-        uses: actions/download-artifacts@v4
-        with:
-          pattern: zo_*
-          merge-multiple: true
-          path: artifacts
-
-      - name: Upload firmware artifacts
-        uses: actions/upload-artifacts@v4
-        with:
-          name: zo_espink
-          path: artifacts/
