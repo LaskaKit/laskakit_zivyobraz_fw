@@ -59,5 +59,5 @@ class ZivyObrazManifest:
         manifest["name"] = f"Živý obraz - {board_displayName[self.board]} {self.display}"
         manifest["version"] = self.version.replace('-', '.')
         manifest["builds"][0]["chipFamily"] = board_chipFamily[self.board]
-        manifest["builds"][0]["parts"][0] = self.bin_filename
+        manifest["builds"][0]["parts"][0]["path"] = self.bin_filename
         return json.dumps(manifest, indent=2, ensure_ascii=False)
