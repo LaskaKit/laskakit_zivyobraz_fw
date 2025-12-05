@@ -7,11 +7,12 @@
 
 
 #include "boards.hpp"
-
-// #define DISPLAY_GDEY075T7
 #include "displays.hpp"
 #include "espclient.hpp"
 #include "sensor.hpp"
+#include "epdbus.hpp"
+#include "gfx.hpp"
+#include "zdecoder.h"
 
 // ZIVYOBRAZ CLIENT PARAMS
 namespace {
@@ -29,8 +30,23 @@ namespace {
 
 
 using namespace LaskaKit::ZivyObraz;
+using namespace LaskaKit::Epaper;
 
+EPDBusSettings epdBusSettings = {
+    PIN_EPD_SCL,
+    PIN_EPD_SDA,
+    PIN_EPD_CS,
+    PIN_EPD_DC,
+    PIN_EPD_BUSY,
+    PIN_EPD_RST
+};
+DISPLAY_T display = DISPLAY_T(epdBusSettings);
+WiFiManager wm;
 
+extern const uint16_t z2ColorToRGB565Lut[4];
+extern const uint16_t z2GrayscaleToRGB565Lut[4];
+extern const uint16_t z3ColorToRGB565Lut[8];
+extern const uint16_t z3GrayscaleToRGB565Lut[8];
 
 // power on peripherals (I2C bus, display, ...)
 void powerOn()
@@ -56,31 +72,47 @@ double readBattery()
 }
 
 
-void fillRect(LaskaKit::Epaper::Display& display, int x, int y, int width, int height, uint8_t color)
-{
-    for (int i = 0; i < width; i++) {
-        for (int j = 0; j < height; j++) {
-            display.drawPixel(x + i, y + j, color);
+// universal callback
+void cb(const struct ZDecoder* decoder) {
+    for (uint16_t col = 0; col < decoder->width; col++) {
+        switch (DISPLAY_T::COLORTYPE) {
+            case ColorType::BW:
+            case ColorType::G4:
+                display.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z2GrayscaleToRGB565Lut, 4));
+            case ColorType::C4:
+            case ColorType::RBW:
+            case ColorType::YBW:
+                display.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z2ColorToRGB565Lut, 4));
+            case ColorType::G8:
+                display.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z3GrayscaleToRGB565Lut, 8));
+            case ColorType::C7:
+                display.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z3ColorToRGB565Lut, 8));
         }
     }
 }
 
 
-void display_qr(LaskaKit::Epaper::Display& display, int pos_x = 0, int pos_y = 0, int scale = 1)
+void _drawColorSwatch(GFX<DISPLAY_T>& gfx, const uint16_t* colorLut, uint8_t numColors, uint16_t posX, uint16_t swatchWidth = 20) {
+    uint16_t swatchPartHeight = gfx.height() / numColors;
+    for (size_t i = 0; i < 4; i++) {
+        uint16_t posY = swatchPartHeight * i;
+        gfx.fillRect(posX, posY, swatchWidth, swatchPartHeight, colorLut[i]);
+    }
+    gfx.fillRect(posX, 0, 2, gfx.height(), colorLut[1]);
+    gfx.fillRect(posX + swatchWidth -2, 0, 2, gfx.height(), colorLut[1]);
+    gfx.fillRect(posX, 0, swatchWidth, 2, colorLut[1]);
+    gfx.fillRect(posX, gfx.height() - 2, swatchWidth, 2, colorLut[1]);
+}
+
+void drawColorSwatch(GFX<DISPLAY_T>& gfx)
 {
-    static QRCode qrcode;
-    uint8_t qrcodeData[qrcode_getBufferSize(3)];
-    String qrstr = "WIFI:S:" + String(AP_SSID) + ";T:WPA;P:" + String(AP_PASS) + ";;";
-    qrcode_initText(&qrcode, qrcodeData, 3, ECC_LOW, qrstr.c_str());
-    
-    for (int y = 0; y < qrcode.size; y++) {
-        for (int x = 0; x < qrcode.size; x++) {
-            if (qrcode_getModule(&qrcode, x, y)) {
-                fillRect(display, pos_x + x * scale, pos_y + y * scale, scale, scale, 0b00);
-            } else {
-                fillRect(display, pos_x + x * scale, pos_y + y * scale, scale, scale, 0b11);
-            }
-        }
+    switch (DISPLAY_T::COLORTYPE) {
+        case ColorType::G4:
+            _drawColorSwatch(gfx, z2GrayscaleToRGB565Lut, 4, gfx.width() - 20);
+            break;
+        case ColorType::C4:
+            _drawColorSwatch(gfx, z2ColorToRGB565Lut, 4, gfx.width() - 20);
+            break;
     }
 }
 
@@ -92,9 +124,9 @@ void setup()
     Wire.setPins(PIN_I2C_SDA, PIN_I2C_SCL);
     Serial.begin(115200);
 
-    static DISPLAY_T display = DISPLAY_T();
+    // testGfx(&display);
+    // return;
 
-    static WiFiManager wm;
     wm.setConfigPortalTimeout(300);
     wm.setConnectTimeout(30);
     wm.setHostname("ESPINK");
@@ -104,7 +136,7 @@ void setup()
         Serial.println(WiFi.softAPIP());
         Serial.println("WiFi Manager");
         Serial.println("Connect to: " + myWiFiManager->getConfigPortalSSID());
-        display_qr(display, 150, 80, 10);
+        // display_qr(display, 150, 80, 10);
         display.fullUpdate();
     });
 
@@ -125,18 +157,14 @@ void setup()
     SensorReading sensorReading = readSensors();
     printSensors(sensorReading);
 
-    StreamingZDEC<COMPRESSION, COLOR_SPACE> decoder(DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT);
-    static COLOR_SPACE rowBuffer[DISPLAY_T::WIDTH];
+    static uint8_t rowBuffer[DISPLAY_T::WIDTH];
+    ZDec decoder(DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT, rowBuffer, cb);
 
-    decoder.setPalette(DISPLAY_PALETTE);
-    decoder.setDecodeBuffer(rowBuffer, DISPLAY_T::WIDTH);
-    decoder.setRowCallback(createDrawCallback<COLOR_SPACE, DISPLAY_T>(display));
-
-    static EspClient<StreamingZDEC<COMPRESSION, COLOR_SPACE>> client(ZIVYOBRAZ_HOST, DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT, decoder);
+    static EspClient<ZDec> client(ZIVYOBRAZ_HOST, &decoder);
     client.addParam("mac", WiFi.macAddress().c_str());
     client.addParam("x", String(DISPLAY_T::WIDTH).c_str());
     client.addParam("y", String(DISPLAY_T::HEIGHT).c_str());
-    client.addParam("c", DISPLAY_COLOR_TYPE);
+    client.addParam("c", colorTypeToCStr(DISPLAY_T::COLORTYPE));
     client.addParam("fw", ZIVYOBRAZ_FIRMWARE_VERSION);
     client.addParam("fwType", ZIVYOBRAZ_FIRMWARE_TYPE);
     client.addParam("timestamp_check", "1");
