@@ -1,9 +1,10 @@
 #!/bin/bash
 
 # space separated values
-BOARDS=$(grep '\[env:' platformio.ini | tr -d '][' | cut -d ':' -f 2 | tr '\n' ' ')
-DISPLAYS=$(grep '^#.*DISPLAY_' include/displays.hpp | cut -d '_' -f 2 | tr '\n' ' ')NONE
-
+# BOARDS=$(grep '\[env:' platformio.ini | tr -d '][' | cut -d ':' -f 2 | tr '\n' ' ')
+BOARDS=espink-v3
+# DISPLAYS=$(grep '^#.*DISPLAY_' include/displays.hpp | cut -d '_' -f 2 | tr '\n' ' ')NONE
+DISPLAYS="GDEY075T7 GDEM075F52 GDEM102F91"
 
 for BOARD in $BOARDS; do
     for DISPLAY in $DISPLAYS; do
