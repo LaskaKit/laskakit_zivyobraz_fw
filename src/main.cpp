@@ -1,18 +1,15 @@
-#include <memory>
 #include <Arduino.h>
 #include <WiFi.h>
-#include <esp_wifi.h>
-#include <qrcode.h>
 #include <WiFiManager.h>
 
 
 #include "boards.hpp"
 #include "displays.hpp"
-#include "espclient.hpp"
+#include "zivyobrazclient.hpp"
 #include "sensor.hpp"
 #include "epdbus.hpp"
-#include "gfx.hpp"
 #include "zdecoder.h"
+
 
 // ZIVYOBRAZ CLIENT PARAMS
 namespace {
@@ -42,6 +39,14 @@ EPDBusSettings epdBusSettings = {
 };
 DISPLAY_T display = DISPLAY_T(epdBusSettings);
 WiFiManager wm;
+uint8_t rowBuffer[DISPLAY_T::WIDTH];
+
+void zdecRowCallback(const struct ZDecoder* decoder);  // forward declaration
+ZDec decoder(DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT, rowBuffer, zdecRowCallback);
+
+void downloadCallback(ContentType contentType, const uint8_t* data, size_t datalen);  // forward declaration
+ZivyObrazClient client(ZIVYOBRAZ_HOST, downloadCallback);
+
 
 extern const uint16_t z2ColorToRGB565Lut[4];
 extern const uint16_t z2GrayscaleToRGB565Lut[4];
@@ -73,7 +78,7 @@ double readBattery()
 
 
 // universal callback
-void cb(const struct ZDecoder* decoder) {
+void zdecRowCallback(const struct ZDecoder* decoder) {
     for (uint16_t col = 0; col < decoder->width; col++) {
         switch (DISPLAY_T::COLORTYPE) {
             case ColorType::BW:
@@ -91,31 +96,35 @@ void cb(const struct ZDecoder* decoder) {
     }
 }
 
-
-void _drawColorSwatch(GFX<DISPLAY_T>& gfx, const uint16_t* colorLut, uint8_t numColors, uint16_t posX, uint16_t swatchWidth = 20) {
-    uint16_t swatchPartHeight = gfx.height() / numColors;
-    for (size_t i = 0; i < 4; i++) {
-        uint16_t posY = swatchPartHeight * i;
-        gfx.fillRect(posX, posY, swatchWidth, swatchPartHeight, colorLut[i]);
-    }
-    gfx.fillRect(posX, 0, 2, gfx.height(), colorLut[1]);
-    gfx.fillRect(posX + swatchWidth -2, 0, 2, gfx.height(), colorLut[1]);
-    gfx.fillRect(posX, 0, swatchWidth, 2, colorLut[1]);
-    gfx.fillRect(posX, gfx.height() - 2, swatchWidth, 2, colorLut[1]);
-}
-
-void drawColorSwatch(GFX<DISPLAY_T>& gfx)
+void downloadCallback(ContentType contentType, const uint8_t* data, size_t datalen)
 {
-    switch (DISPLAY_T::COLORTYPE) {
-        case ColorType::G4:
-            _drawColorSwatch(gfx, z2GrayscaleToRGB565Lut, 4, gfx.width() - 20);
+    Serial.printf("Download callback %d bytes\n", datalen);
+    switch (contentType) {
+        case ContentType::APPLICATION_JSON:
+            Serial.println("Received JSON");
             break;
-        case ColorType::C4:
-            _drawColorSwatch(gfx, z2ColorToRGB565Lut, 4, gfx.width() - 20);
+        case ContentType::IMAGE_Z2:
+        case ContentType::IMAGE_Z3:
+            Serial.println("Received image/z2-3");
+            decoder.decode(data, datalen);
+            break;
+        case ContentType::IMAGE_BMP:
+            Serial.println("Received image/bmp");
+            break;
+        case ContentType::IMAGE_PNG:
+            Serial.println("Received image/png");
+            break;
+        case ContentType::TEXT_PLAIN:
+            Serial.println("Received text/plain");
+            break;
+        case ContentType::TEXT_HTML:
+            Serial.println("Received text/html");
+            break;
+        case ContentType::UNKNOWN:
+            Serial.println("Received unsuported content type");
             break;
     }
 }
-
 
 void setup()
 {
@@ -123,9 +132,6 @@ void setup()
     // set I2C pins
     Wire.setPins(PIN_I2C_SDA, PIN_I2C_SCL);
     Serial.begin(115200);
-
-    // testGfx(&display);
-    // return;
 
     wm.setConfigPortalTimeout(300);
     wm.setConnectTimeout(30);
@@ -157,69 +163,91 @@ void setup()
     SensorReading sensorReading = readSensors();
     printSensors(sensorReading);
 
-    static uint8_t rowBuffer[DISPLAY_T::WIDTH];
-    ZDec decoder(DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT, rowBuffer, cb);
-
-    static EspClient<ZDec> client(ZIVYOBRAZ_HOST, &decoder);
-    client.addParam("mac", WiFi.macAddress().c_str());
-    client.addParam("x", String(DISPLAY_T::WIDTH).c_str());
-    client.addParam("y", String(DISPLAY_T::HEIGHT).c_str());
-    client.addParam("c", colorTypeToCStr(DISPLAY_T::COLORTYPE));
-    client.addParam("fw", ZIVYOBRAZ_FIRMWARE_VERSION);
-    client.addParam("fwType", ZIVYOBRAZ_FIRMWARE_TYPE);
-    client.addParam("timestamp_check", "1");
-    client.addParam("ssid", WiFi.SSID().c_str());
-    client.addParam("rssi", std::to_string(WiFi.RSSI()).c_str());
-    client.addParam("v", std::to_string(readBattery()).c_str());
+    String path;
+    path += "/?mac=" + WiFi.macAddress();
+    path += "&x=" + String(DISPLAY_T::WIDTH);
+    path += "&y=" + String(DISPLAY_T::HEIGHT);
+    path += "&c=" + String(colorTypeToCStr(DISPLAY_T::COLORTYPE));
+    path += "&fw=" + String(ZIVYOBRAZ_FIRMWARE_VERSION);
+    path += "&fwType=" + String(ZIVYOBRAZ_FIRMWARE_TYPE);
+    path += "&timestamp_check=1";
+    path += "&ssid=" + WiFi.SSID();
+    path += "&rssi=" + String(WiFi.RSSI());
+    path += "&v" + String(readBattery());
 
     if (sensorReading.flag & Sensor::_SHT4x) {
-        client.addParam("temp", std::to_string(sensorReading.sht.temperature).c_str());
-        client.addParam("hum", std::to_string(sensorReading.sht.humidity).c_str());
+        path += "&temp=" + String(sensorReading.sht.temperature);
+        path += "&hum=", String(sensorReading.sht.humidity);
     } else if (sensorReading.flag & Sensor::_BME280) {
-        client.addParam("temp", std::to_string(sensorReading.bme.temperature).c_str());
-        client.addParam("hum", std::to_string(sensorReading.bme.humidity).c_str());
-        client.addParam("pres", std::to_string(sensorReading.bme.pressure).c_str());
+        path += "&temp=" + String(sensorReading.bme.temperature);
+        path += "&hum=" + String(sensorReading.bme.humidity);
+        path += "&pres=" + String(sensorReading.bme.pressure);
     } else if (sensorReading.flag & Sensor::_SCD4x) {
-        client.addParam("temp", std::to_string(sensorReading.scd.temperature).c_str());
-        client.addParam("hum", std::to_string(sensorReading.scd.humidity).c_str());
-        client.addParam("pres", std::to_string(sensorReading.scd.co2).c_str());
+        path += "&temp=" + String(sensorReading.scd.temperature);
+        path += "&hum=" + String(sensorReading.scd.humidity);
+        path += "&pres=" + String(sensorReading.scd.co2);
     } else if (sensorReading.flag & Sensor::_STCC4) {
-        client.addParam("temp", std::to_string(sensorReading.stcc4.temperature).c_str());
-        client.addParam("hum", std::to_string(sensorReading.stcc4.humidity).c_str());
-        client.addParam("pres", std::to_string(sensorReading.stcc4.co2).c_str());
+        path += "&temp=" + String(sensorReading.stcc4.temperature);
+        path += "&hum=" + String(sensorReading.stcc4.humidity);
+        path += "&pres=" + String(sensorReading.stcc4.co2);
     } else if (sensorReading.flag & Sensor::_SGP41) {
-        client.addParam("temp", std::to_string(sensorReading.sgp41.nox).c_str());
-        client.addParam("hum", std::to_string(sensorReading.sgp41.voc).c_str());
+        path += "&temp=" + String(sensorReading.sgp41.nox);
+        path += "&hum=" + String(sensorReading.sgp41.voc);
     } else if (sensorReading.flag & Sensor::_BH1750) {
-        client.addParam("temp", std::to_string(sensorReading.bh1750.lux).c_str());
+        path += "&temp=" + String(sensorReading.bh1750.lux);
     }
 
-
     unsigned long start = millis();
-
-    client.get();
-    // TODO shutdowm WiFI
+    client.get(path.c_str());
     Serial.printf("Download time: %lu ms\n", millis() - start);
 
-    start = millis();
-    display.fullUpdate();
-    powerOff();
-    Serial.printf("Update time: %lu ms\n", millis() - start);
+    // shutdown wifi
+    WiFi.disconnect();
+    WiFi.mode(WIFI_OFF);
 
-    // Process headers
+    if (decoder.state() == ZERROR) {
+        printf("Decoder encountered an error.\n");
+        printf("Reason: ");
+        switch (decoder.error()) {
+            case ZERROR_HEADER:
+                printf("header\n");
+                break;
+            case ZERROR_OVERFLOW:
+                printf("overflow\n");
+                break;
+            case ZERROR_BUFFER:
+                printf("buffer is NULL\n");
+                break;
+            case ZERROR_CALLBACK:
+                printf("callback is NULL\n");
+                break;
+        }
+    }
+
+    start = millis();
+    if (decoder.state() != ZERROR) {
+        display.fullUpdate();
+    } else {
+        Serial.println("Not updating due to decode error.");
+    }
+    Serial.printf("Update time: %lu ms\n", millis() - start);
+    powerOff();
+
+    // Process sleep headers
     char headerValue[20];  // tmp buffer
     uint64_t sleepTimeMinutes = 0;
     uint64_t sleepTimeSeconds = 0;
-    client.getHeader(headerValue, "Sleep");
-    sleepTimeMinutes = String(headerValue).toInt();
-    client.getHeader(headerValue, "SleepSeconds");
-    sleepTimeSeconds = String(headerValue).toInt();
-
-
-    if (sleepTimeSeconds > 0) {
+    uint64_t sleepTimePrecise = 0;
+    if (client.getHeader(headerValue, "PreciseSleep")) {
+        sleepTimePrecise = String(headerValue).toInt();
+        Serial.printf("Deep sleep: Using PreciseSleep: %d s\n", sleepTimePrecise);
+        esp_sleep_enable_timer_wakeup(sleepTimePrecise * 1000000);
+    } else if (client.getHeader(headerValue, "SleepSeconds")) {
+        sleepTimeSeconds = String(headerValue).toInt();
         Serial.printf("Deep sleep: Using SleepSeconds: %d s\n", sleepTimeSeconds);
         esp_sleep_enable_timer_wakeup(sleepTimeSeconds * 1000000);
-    } else if (sleepTimeMinutes > 0) {
+    } else if (client.getHeader(headerValue, "Sleep")) {
+        sleepTimeMinutes = String(headerValue).toInt();
         Serial.printf("Deep sleep: Using Sleep: %d m\n", sleepTimeMinutes);
         esp_sleep_enable_timer_wakeup(sleepTimeMinutes * 60 * 1000000);
     } else {
