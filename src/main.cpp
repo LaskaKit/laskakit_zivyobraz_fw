@@ -173,7 +173,7 @@ void setup()
     path += "&timestamp_check=1";
     path += "&ssid=" + WiFi.SSID();
     path += "&rssi=" + String(WiFi.RSSI());
-    path += "&v" + String(readBattery());
+    path += "&v=" + String(readBattery());
 
     if (sensorReading.flag & Sensor::_SHT4x) {
         path += "&temp=" + String(sensorReading.sht.temperature);
