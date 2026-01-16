@@ -5,11 +5,12 @@
 
 #include "boards.hpp"
 #include "displays.hpp"
+#include "laskakit_epaper.hpp"
 #include "zivyobrazclient.hpp"
 #include "sensor.hpp"
 #include "epdbus.hpp"
 #include "zdecoder.h"
-
+#include "gfx.hpp"
 
 // ZIVYOBRAZ CLIENT PARAMS
 namespace {
@@ -19,6 +20,7 @@ namespace {
 
     constexpr const char* AP_SSID = "ESPINK-Setup";
     constexpr const char* AP_PASS = "zivyobraz";
+    constexpr const char* AP_CONN_STR = "WIFI:S:ESPINK-Setup;T:WPA;P:zivyobraz;;";
 
     constexpr size_t DEEP_SLEEP_TIME_S = 120;
 }
@@ -38,6 +40,7 @@ EPDBusSettings epdBusSettings = {
     PIN_EPD_RST
 };
 DISPLAY_T display = DISPLAY_T(epdBusSettings);
+GFX<DISPLAY_T> gfxDisplay(&display);
 WiFiManager wm;
 uint8_t rowBuffer[DISPLAY_T::WIDTH];
 
@@ -47,11 +50,6 @@ ZDec decoder(DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT, rowBuffer, zdecRowCallback);
 void downloadCallback(ContentType contentType, const uint8_t* data, size_t datalen);  // forward declaration
 ZivyObrazClient client(ZIVYOBRAZ_HOST, downloadCallback);
 
-
-extern const uint16_t z2ColorToRGB565Lut[4];
-extern const uint16_t z2GrayscaleToRGB565Lut[4];
-extern const uint16_t z3ColorToRGB565Lut[8];
-extern const uint16_t z3GrayscaleToRGB565Lut[8];
 
 // power on peripherals (I2C bus, display, ...)
 void powerOn()
@@ -83,15 +81,15 @@ void zdecRowCallback(const struct ZDecoder* decoder) {
         switch (DISPLAY_T::COLORTYPE) {
             case ColorType::BW:
             case ColorType::G4:
-                display.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z2GrayscaleToRGB565Lut, 4));
+                gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z2GrayscaleToRGB565Lut, 4));
             case ColorType::C4:
             case ColorType::RBW:
             case ColorType::YBW:
-                display.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z2ColorToRGB565Lut, 4));
+                gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z2ColorToRGB565Lut, 4));
             case ColorType::G8:
-                display.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z3GrayscaleToRGB565Lut, 8));
+                gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z3GrayscaleToRGB565Lut, 8));
             case ColorType::C7:
-                display.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z3ColorToRGB565Lut, 8));
+                gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z3ColorToRGB565Lut, 8));
         }
     }
 }
@@ -126,6 +124,41 @@ void downloadCallback(ContentType contentType, const uint8_t* data, size_t datal
     }
 }
 
+
+void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
+{
+    gfxDisplay.fillScreen(static_cast<uint16_t>(RGB565::WHITE));
+    gfxDisplay.setCursor(10, 10);
+    gfxDisplay.setTextSize(2);
+    gfxDisplay.setTextColor(static_cast<uint16_t>(RGB565::BLACK));
+    gfxDisplay.printf("    Board: ");
+    #if defined ESPINK_V3
+        gfxDisplay.printf("ESPink v3\n");
+    #elif defined ESPINK_V2
+        gfxDisplay.printf("ESPink v2\n");
+    #endif
+    gfxDisplay.printf("   Display: %s\n", DISPLAY_T::NAME);
+    gfxDisplay.printf("Resolution: %dx%d\n", DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT);
+    gfxDisplay.printf("     Color: %s\n", colorTypeToCStr(DISPLAY_T::COLORTYPE));
+    gfxDisplay.printf("        IP: %s\n", WiFi.softAPIP().toString().c_str());
+    gfxDisplay.printf("       MAC: %s\n", WiFi.macAddress().c_str());
+
+    gfxDisplay.drawColorSwatch();
+
+    gfxDisplay.drawQRCodeText(10, 200, AP_CONN_STR, 0x0, 0xFFFF);
+    gfxDisplay.fullUpdate();
+}
+
+void screenConfigPortalTimeout(GFX<DISPLAY_T>& gfxDisplay)
+{
+    gfxDisplay.fillScreen(static_cast<uint16_t>(RGB565::WHITE));
+    gfxDisplay.setCursor(10, 10);
+    gfxDisplay.printf("Configuration portal timerout.");
+    gfxDisplay.printf("Going deep-sleep for some time.");
+    gfxDisplay.fullUpdate();
+}
+
+
 void setup()
 {
     powerOn();
@@ -135,21 +168,21 @@ void setup()
 
     wm.setConfigPortalTimeout(300);
     wm.setConnectTimeout(30);
-    wm.setHostname("ESPINK");
+    wm.setHostname("ESPink");
 
     wm.setAPCallback([](WiFiManager* myWiFiManager) {
         Serial.println("Entered config mode");
         Serial.println(WiFi.softAPIP());
         Serial.println("WiFi Manager");
-        Serial.println("Connect to: " + myWiFiManager->getConfigPortalSSID());
-        // display_qr(display, 150, 80, 10);
-        display.fullUpdate();
+        Serial.println("Connect to: " + String(AP_SSID));
+        screenConfigPortal(gfxDisplay);
     });
 
     if (!wm.autoConnect(AP_SSID, AP_PASS)) {
         Serial.println("Failed to connect, starting configuration portal");
         if (!wm.startConfigPortal(AP_SSID, AP_PASS)) {
             Serial.println("Failed to connect and hit timeout.");
+            screenConfigPortalTimeout(gfxDisplay);
             esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME_S * 1000000);
             delay(100);
             esp_deep_sleep_start();
@@ -158,7 +191,7 @@ void setup()
 
     Serial.println("\nConnected to WiFi!");
     Serial.println("Local IP: " + WiFi.localIP().toString());
-    Serial.println(WiFi.macAddress());
+    Serial.println("MAC: " + WiFi.macAddress());
 
     SensorReading sensorReading = readSensors();
     printSensors(sensorReading);

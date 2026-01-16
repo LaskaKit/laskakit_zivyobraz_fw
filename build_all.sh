@@ -4,7 +4,8 @@
 # BOARDS=$(grep '\[env:' platformio.ini | tr -d '][' | cut -d ':' -f 2 | tr '\n' ' ')
 BOARDS=espink-v3
 # DISPLAYS=$(grep '^#.*DISPLAY_' include/displays.hpp | cut -d '_' -f 2 | tr '\n' ' ')NONE
-DISPLAYS="GDEY075T7 GDEM075F52 GDEM102F91"
+# DISPLAYS="GDEY075T7 GDEM075F52 GDEM102F91"
+DISPLAYS="GDEY075T7 GDEY075Z08 GDEY1248F51 GDEM102F91 GDEM075F52"
 
 for BOARD in $BOARDS; do
     for DISPLAY in $DISPLAYS; do
