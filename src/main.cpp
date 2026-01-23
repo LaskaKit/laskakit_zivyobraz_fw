@@ -131,19 +131,20 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
     gfxDisplay.setCursor(10, 10);
     gfxDisplay.setTextSize(2);
     gfxDisplay.setTextColor(static_cast<uint16_t>(RGB565::BLACK));
-    gfxDisplay.printf("    Board: ");
+    gfxDisplay.printf("     Board: ");
     #if defined ESPINK_V3
         gfxDisplay.printf("ESPink v3\n");
     #elif defined ESPINK_V2
         gfxDisplay.printf("ESPink v2\n");
     #endif
-    gfxDisplay.printf("   Display: %s\n", DISPLAY_T::NAME);
-    gfxDisplay.printf("Resolution: %lux%lu\n", DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT);
-    gfxDisplay.printf("     Color: %s\n", colorTypeToCStr(DISPLAY_T::COLORTYPE));
-    gfxDisplay.printf("        IP: %s\n", WiFi.softAPIP().toString().c_str());
-    gfxDisplay.printf("       MAC: %s\n", WiFi.macAddress().c_str());
-    gfxDisplay.printf("   AP SSID: %s\n", AP_SSID);
-    gfxDisplay.printf("   AP PASS: %s\n", AP_PASS);
+    gfxDisplay.printf("    Display: %s\n", DISPLAY_T::NAME);
+    gfxDisplay.printf(" Resolution: %lux%lu\n", DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT);
+    gfxDisplay.printf("      Color: %s\n", colorTypeToCStr(DISPLAY_T::COLORTYPE));
+    gfxDisplay.printf("         IP: %s\n", WiFi.softAPIP().toString().c_str());
+    gfxDisplay.printf("        MAC: %s\n", WiFi.macAddress().c_str());
+    gfxDisplay.printf("    AP SSID: %s\n", AP_SSID);
+    gfxDisplay.printf("    AP PASS: %s\n", AP_PASS);
+    gfxDisplay.printf("    Battery: %4.2f V\n", readBattery());
 
     gfxDisplay.drawColorSwatch();
 
