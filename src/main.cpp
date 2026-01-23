@@ -138,14 +138,16 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
         gfxDisplay.printf("ESPink v2\n");
     #endif
     gfxDisplay.printf("   Display: %s\n", DISPLAY_T::NAME);
-    gfxDisplay.printf("Resolution: %dx%d\n", DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT);
+    gfxDisplay.printf("Resolution: %lux%lu\n", DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT);
     gfxDisplay.printf("     Color: %s\n", colorTypeToCStr(DISPLAY_T::COLORTYPE));
     gfxDisplay.printf("        IP: %s\n", WiFi.softAPIP().toString().c_str());
     gfxDisplay.printf("       MAC: %s\n", WiFi.macAddress().c_str());
+    gfxDisplay.printf("   AP SSID: %s\n", AP_SSID);
+    gfxDisplay.printf("   AP PASS: %s\n", AP_PASS);
 
     gfxDisplay.drawColorSwatch();
 
-    gfxDisplay.drawQRCodeText(10, 200, AP_CONN_STR, 0x0, 0xFFFF);
+    gfxDisplay.drawQRCodeText(10, 200, AP_CONN_STR, static_cast<uint16_t>(RGB565::BLACK), static_cast<uint16_t>(RGB565::WHITE));
     gfxDisplay.fullUpdate();
 }
 
@@ -158,13 +160,36 @@ void screenConfigPortalTimeout(GFX<DISPLAY_T>& gfxDisplay)
     gfxDisplay.fullUpdate();
 }
 
+void setupButton()
+{
+    pinMode(PIN_BUTTON, INPUT);
+}
+
+bool buttonPressed()
+{
+    return digitalRead(PIN_BUTTON) == 0;
+}
+
 
 void setup()
 {
+    Serial.begin(115200);
+    delay(2000);
+
     powerOn();
+
+    setupButton();
+    if (buttonPressed()) {
+        wm.erase();
+        gfxDisplay.fillScreen(static_cast<uint16_t>(RGB565::WHITE));  // Clear the screen
+        gfxDisplay.fullUpdate();
+        Serial.printf("Deep sleep: Using Default: %d s\n", DEEP_SLEEP_TIME_S);
+        esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME_S * 1000000);
+        esp_deep_sleep_start();
+    }
+
     // set I2C pins
     Wire.setPins(PIN_I2C_SDA, PIN_I2C_SCL);
-    Serial.begin(115200);
 
     wm.setConfigPortalTimeout(300);
     wm.setConnectTimeout(30);
