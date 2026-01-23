@@ -17,8 +17,7 @@
     #define DISPLAY_T LaskaKit::Epaper::E2741FS081
 
 #elif defined DISPLAY_E2741CS0B2
-    // same code as RBW version, just does not display red
-    #include "laskakit_E2741FS081.hpp"
+    #include "laskakit_E2741CS0B2.hpp"
     #define DISPLAY_T LaskaKit::Epaper::E2741FS081
 
 #elif defined DISPLAY_GDEM102F91
