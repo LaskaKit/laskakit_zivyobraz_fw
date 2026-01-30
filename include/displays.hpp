@@ -28,6 +28,10 @@
     #include "laskakit_GDEM075F52.hpp"
     #define DISPLAY_T LaskaKit::Epaper::GDEM075F52
 
+#elif defined DISPLAY_GDEM0154F51H
+    #include "laskakit_GDEM0154F51H.hpp"
+    #define DISPLAY_T LaskaKit::Epaper::GDEM0154F51H
+
 #else
     #include "laskakit_none.hpp"
     #define DISPLAY_T LaskaKit::Epaper::None

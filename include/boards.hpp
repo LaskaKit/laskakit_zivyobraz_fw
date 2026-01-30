@@ -12,7 +12,7 @@
     static constexpr int PIN_PWR = 2;
     static constexpr int PIN_VBAT = 34;
     static constexpr double VBAT_DIVIDER_RATIO = 1.769;
-#elif defined ESPINK_V3
+#elif defined(ESPINK_V3) || defined(UESPINK_V1)
     static constexpr int PIN_EPD_SDA = 11;
     static constexpr int PIN_EPD_SCL = 12;
     static constexpr int PIN_EPD_CS = 10;

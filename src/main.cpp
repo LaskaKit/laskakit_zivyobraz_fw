@@ -2,7 +2,6 @@
 #include <WiFi.h>
 #include <WiFiManager.h>
 
-
 #include "boards.hpp"
 #include "displays.hpp"
 #include "laskakit_epaper.hpp"
@@ -18,9 +17,9 @@ namespace {
     constexpr const char* ZIVYOBRAZ_FIRMWARE_VERSION = "2.4";
     constexpr const char* ZIVYOBRAZ_FIRMWARE_TYPE = VERSION;
 
-    constexpr const char* AP_SSID = "ESPINK-Setup";
+    constexpr const char* AP_SSID = "ESPink";
     constexpr const char* AP_PASS = "zivyobraz";
-    constexpr const char* AP_CONN_STR = "WIFI:S:ESPINK-Setup;T:WPA;P:zivyobraz;;";
+    constexpr const char* AP_CONN_STR = "WIFI:S:ESPink;T:WPA;P:zivyobraz;";
 
     constexpr size_t DEEP_SLEEP_TIME_S = 120;
 }
@@ -50,6 +49,7 @@ ZDec decoder(DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT, rowBuffer, zdecRowCallback);
 void downloadCallback(ContentType contentType, const uint8_t* data, size_t datalen);  // forward declaration
 ZivyObrazClient client(ZIVYOBRAZ_HOST, downloadCallback);
 
+SensorReading sensorReading;
 
 // power on peripherals (I2C bus, display, ...)
 void powerOn()
@@ -124,31 +124,67 @@ void downloadCallback(ContentType contentType, const uint8_t* data, size_t datal
     }
 }
 
+void displaySensors(GFX<DISPLAY_T>& gfxDisplay, SensorReading& reading)
+{
+    if (reading.flag & Sensor::_SHT4x) {
+        gfxDisplay.printf("SHT4x:T%.1fH%.1f\n", reading.sht.temperature, reading.sht.humidity);
+    }
+    if (reading.flag & Sensor::_BME280) {
+        gfxDisplay.printf("BME280:T%.1fH%.1fP%.1f\n", reading.bme.temperature, reading.bme.humidity, reading.bme.pressure);
+    }
+    if (reading.flag & Sensor::_SCD4x) {
+        gfxDisplay.printf("SCD4xT%.1fH%.1fCO2%.1f\n", reading.scd.temperature, reading.scd.humidity, reading.scd.co2);
+    }
+    if (reading.flag & Sensor::_STCC4) {
+        gfxDisplay.printf("STCC4:T%.1fH%.2fCO2%.1f\n", reading.stcc4.temperature, reading.stcc4.humidity, reading.stcc4.co2);
+    }
+    if (reading.flag & Sensor::_SGP41) {
+        gfxDisplay.printf("SGP41:VOC%dNOx%d\n", reading.sgp41.voc, reading.sgp41.nox);
+    }
+    if (reading.flag & Sensor::_BH1750) {
+        gfxDisplay.printf("BH1750:LUX%.1f\n", reading.bh1750.lux);
+    }
+}
 
 void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
 {
     gfxDisplay.fillScreen(static_cast<uint16_t>(RGB565::WHITE));
-    gfxDisplay.setCursor(10, 10);
-    gfxDisplay.setTextSize(2);
+
+    uint8_t scale = 4;
+    if (gfxDisplay.height() < 300 || gfxDisplay.width() < 300) {
+        gfxDisplay.setTextSize(1);
+        scale = 3;
+    } else {
+        gfxDisplay.setTextSize(2);
+        scale = 6;
+    }
+    gfxDisplay.setCursor(0, 0);
+
     gfxDisplay.setTextColor(static_cast<uint16_t>(RGB565::BLACK));
-    gfxDisplay.printf("     Board: ");
+    gfxDisplay.printf("   Board: ");
     #if defined ESPINK_V3
         gfxDisplay.printf("ESPink v3\n");
     #elif defined ESPINK_V2
         gfxDisplay.printf("ESPink v2\n");
+    #elif defined MICRO_ESPINK_V1
+        gfxDisplay.printf("MicroESPink v1\n");
+    #else
+        gfxDisplay.printf("unknown\n");
     #endif
-    gfxDisplay.printf("    Display: %s\n", DISPLAY_T::NAME);
-    gfxDisplay.printf(" Resolution: %lux%lu\n", DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT);
-    gfxDisplay.printf("      Color: %s\n", colorTypeToCStr(DISPLAY_T::COLORTYPE));
-    gfxDisplay.printf("         IP: %s\n", WiFi.softAPIP().toString().c_str());
-    gfxDisplay.printf("        MAC: %s\n", WiFi.macAddress().c_str());
-    gfxDisplay.printf("    AP SSID: %s\n", AP_SSID);
-    gfxDisplay.printf("    AP PASS: %s\n", AP_PASS);
-    gfxDisplay.printf("    Battery: %4.2f V\n", readBattery());
-
+    gfxDisplay.printf(" Display: %s\n", DISPLAY_T::NAME);
+    gfxDisplay.printf("     Res: %lux%lu\n", DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT);
+    gfxDisplay.printf("   Color: %s\n", colorTypeToCStr(DISPLAY_T::COLORTYPE));
+    gfxDisplay.printf("      IP: %s\n", WiFi.softAPIP().toString().c_str());
+    gfxDisplay.printf("     MAC: %s\n", WiFi.macAddress().c_str());
+    gfxDisplay.printf(" AP SSID: %s\n", AP_SSID);
+    gfxDisplay.printf(" AP PASS: %s\n", AP_PASS);
+    gfxDisplay.printf(" Battery: %4.2f V\n", readBattery());
+    gfxDisplay.printf("  Sensor:\n");
+    displaySensors(gfxDisplay, sensorReading);
     gfxDisplay.drawColorSwatch();
 
-    gfxDisplay.drawQRCodeText(10, 200, AP_CONN_STR, static_cast<uint16_t>(RGB565::BLACK), static_cast<uint16_t>(RGB565::WHITE));
+    uint16_t qrsize = 25 * scale;
+    gfxDisplay.drawQRCodeText(2, gfxDisplay.height() - qrsize - 2, AP_CONN_STR, static_cast<uint16_t>(RGB565::BLACK), static_cast<uint16_t>(RGB565::WHITE), scale);
     gfxDisplay.fullUpdate();
 }
 
@@ -161,6 +197,7 @@ void screenConfigPortalTimeout(GFX<DISPLAY_T>& gfxDisplay)
     gfxDisplay.fullUpdate();
 }
 
+#ifdef ESPINK_V3
 void setupButton()
 {
     pinMode(PIN_BUTTON, INPUT);
@@ -170,15 +207,18 @@ bool buttonPressed()
 {
     return digitalRead(PIN_BUTTON) == 0;
 }
-
+#endif  // ESPINK_V3
 
 void setup()
 {
+    Wire.setPins(PIN_I2C_SDA, PIN_I2C_SCL);
     Serial.begin(115200);
-    delay(2000);
-
+    // while (!Serial) {delay(10);}
     powerOn();
+    sensorReading = readSensors();
+    printSensors(sensorReading);
 
+#ifdef ESPINK_V3
     setupButton();
     if (buttonPressed()) {
         wm.erase();
@@ -188,9 +228,9 @@ void setup()
         esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME_S * 1000000);
         esp_deep_sleep_start();
     }
+#endif  // ESPINK_V3
 
     // set I2C pins
-    Wire.setPins(PIN_I2C_SDA, PIN_I2C_SCL);
 
     wm.setConfigPortalTimeout(300);
     wm.setConnectTimeout(30);
@@ -219,8 +259,6 @@ void setup()
     Serial.println("Local IP: " + WiFi.localIP().toString());
     Serial.println("MAC: " + WiFi.macAddress());
 
-    SensorReading sensorReading = readSensors();
-    printSensors(sensorReading);
 
     String path;
     path += "/?mac=" + WiFi.macAddress();
