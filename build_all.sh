@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # space separated values
-BOARDS="espink-v2"
+BOARDS="espink-v3 uespink-v1"
 DISPLAYS=$(grep '^#.*DISPLAY_' include/displays.hpp | cut -d '_' -f 2 | tr '\n' ' ')NONE
 # DISPLAYS="GDEY075T7 GDEY075Z08 GDEY1248F51 GDEM102F91 GDEM075F52"
 
