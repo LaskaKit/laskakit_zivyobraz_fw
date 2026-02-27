@@ -32,8 +32,31 @@
     #include "laskakit_GDEM0154F51H.hpp"
     #define DISPLAY_T LaskaKit::Epaper::GDEM0154F51H
 
+#elif defined DISPLAY_GDEM042F52
+    #include "laskakit_GDEM042F52.hpp"
+    #define DISPLAY_T LaskaKit::Epaper::GDEM042F52
+
+#elif defined DISPLAY_GDEQ0426T82
+    #include "laskakit_GDEQ0426T82.hpp"
+    #define DISPLAY_T LaskaKit::Epaper::GDEQ0426T82
+
+#elif defined DISPLAY_GDEY0583F41
+    #include "laskakit_GDEY0583F41.hpp"
+    #define DISPLAY_T LaskaKit::Epaper::GDEY0583F41
+
+#elif defined DISPLAY_GDEY0213B74
+    #include "laskakit_GDEY0213B74.hpp"
+    #define DISPLAY_T LaskaKit::Epaper::GDEY0213B74
+
+#elif defined DISPLAY_GDEY029T71H
+    #include "laskakit_GDEY029T71H.hpp"
+    #define DISPLAY_T LaskaKit::Epaper::GDEY029T71H
+
+#elif defined DISPLAY_GDEY116F51
+    #include "laskakit_GDEY116F51.hpp"
+    #define DISPLAY_T LaskaKit::Epaper::GDEY116F51
+
 #else
     #include "laskakit_none.hpp"
     #define DISPLAY_T LaskaKit::Epaper::None
-
 #endif
