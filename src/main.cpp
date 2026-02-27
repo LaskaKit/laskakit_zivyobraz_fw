@@ -37,7 +37,8 @@ EPDBusSettings epdBusSettings = {
     PIN_EPD_CS,
     PIN_EPD_DC,
     PIN_EPD_BUSY,
-    PIN_EPD_RST
+    PIN_EPD_RST,
+    PIN_PWR,
 };
 DISPLAY_T display = DISPLAY_T(epdBusSettings);
 GFX<DISPLAY_T> gfxDisplay(&display);
