@@ -4,6 +4,7 @@
 
 #include "boards.hpp"
 #include "displays.hpp"
+#include "esp32-hal-psram.h"
 #include "laskakit_epaper.hpp"
 #include "zivyobrazclient.hpp"
 #include "sensor.hpp"
@@ -96,7 +97,7 @@ void zdecRowCallback(const struct ZDecoder* decoder) {
 
 void downloadCallback(ContentType contentType, const uint8_t* data, size_t datalen)
 {
-    Serial.printf("Download callback %d bytes\n", datalen);
+    Serial.printf("Download callback %ld bytes\n", datalen);
     switch (contentType) {
         case ContentType::APPLICATION_JSON:
             Serial.println("Received JSON");
@@ -127,22 +128,22 @@ void downloadCallback(ContentType contentType, const uint8_t* data, size_t datal
 void displaySensors(GFX<DISPLAY_T>& gfxDisplay, SensorReading& reading)
 {
     if (reading.flag & Sensor::_SHT4x) {
-        gfxDisplay.printf("SHT4x:T%.1fH%.1f\n", reading.sht.temperature, reading.sht.humidity);
+        gfxDisplay.printf(" SHT4x:T%.1fH%.1f\n", reading.sht.temperature, reading.sht.humidity);
     }
     if (reading.flag & Sensor::_BME280) {
-        gfxDisplay.printf("BME280:T%.1fH%.1fP%.1f\n", reading.bme.temperature, reading.bme.humidity, reading.bme.pressure);
+        gfxDisplay.printf(" BME280:T%.1fH%.1fP%.1f\n", reading.bme.temperature, reading.bme.humidity, reading.bme.pressure);
     }
     if (reading.flag & Sensor::_SCD4x) {
-        gfxDisplay.printf("SCD4xT%.1fH%.1fCO2%.1f\n", reading.scd.temperature, reading.scd.humidity, reading.scd.co2);
+        gfxDisplay.printf(" SCD4xT%.1fH%.1fCO2%.1f\n", reading.scd.temperature, reading.scd.humidity, reading.scd.co2);
     }
     if (reading.flag & Sensor::_STCC4) {
-        gfxDisplay.printf("STCC4:T%.1fH%.2fCO2%.1f\n", reading.stcc4.temperature, reading.stcc4.humidity, reading.stcc4.co2);
+        gfxDisplay.printf(" STCC4:T%.1fH%.2fCO2%.1f\n", reading.stcc4.temperature, reading.stcc4.humidity, reading.stcc4.co2);
     }
     if (reading.flag & Sensor::_SGP41) {
-        gfxDisplay.printf("SGP41:VOC%dNOx%d\n", reading.sgp41.voc, reading.sgp41.nox);
+        gfxDisplay.printf(" SGP41:VOC%dNOx%d\n", reading.sgp41.voc, reading.sgp41.nox);
     }
     if (reading.flag & Sensor::_BH1750) {
-        gfxDisplay.printf("BH1750:LUX%.1f\n", reading.bh1750.lux);
+        gfxDisplay.printf(" BH1750:LUX%.1f\n", reading.bh1750.lux);
     }
 }
 
@@ -154,6 +155,9 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
     if (gfxDisplay.height() < 300 || gfxDisplay.width() < 300) {
         gfxDisplay.setTextSize(1);
         scale = 3;
+    } else if (gfxDisplay.height() < 480 || gfxDisplay.width() < 480) {
+        gfxDisplay.setTextSize(1);
+        scale = 4;
     } else {
         gfxDisplay.setTextSize(2);
         scale = 6;
@@ -161,25 +165,26 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
     gfxDisplay.setCursor(0, 0);
 
     gfxDisplay.setTextColor(static_cast<uint16_t>(RGB565::BLACK));
-    gfxDisplay.printf("   Board: ");
+    gfxDisplay.printf("    Board: ");
     #if defined ESPINK_V3
-        gfxDisplay.printf("ESPink v3\n");
+        gfxDisplay.printf(" ESPink v3\n");
     #elif defined ESPINK_V2
-        gfxDisplay.printf("ESPink v2\n");
+        gfxDisplay.printf(" ESPink v2\n");
     #elif defined MICRO_ESPINK_V1
-        gfxDisplay.printf("MicroESPink v1\n");
+        gfxDisplay.printf(" MicroESPink v1\n");
     #else
         gfxDisplay.printf("unknown\n");
     #endif
-    gfxDisplay.printf(" Display: %s\n", DISPLAY_T::NAME);
-    gfxDisplay.printf("     Res: %lux%lu\n", DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT);
-    gfxDisplay.printf("   Color: %s\n", colorTypeToCStr(DISPLAY_T::COLORTYPE));
-    gfxDisplay.printf("      IP: %s\n", WiFi.softAPIP().toString().c_str());
-    gfxDisplay.printf("     MAC: %s\n", WiFi.macAddress().c_str());
-    gfxDisplay.printf(" AP SSID: %s\n", AP_SSID);
-    gfxDisplay.printf(" AP PASS: %s\n", AP_PASS);
-    gfxDisplay.printf(" Battery: %4.2f V\n", readBattery());
-    gfxDisplay.printf("  Sensor:\n");
+    gfxDisplay.printf("  Display: %s\n", DISPLAY_T::NAME);
+    gfxDisplay.printf("      Res: %ux%u\n", DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT);
+    gfxDisplay.printf("    Color: %s\n", colorTypeToCStr(DISPLAY_T::COLORTYPE));
+    gfxDisplay.printf("       IP: %s\n", WiFi.softAPIP().toString().c_str());
+    gfxDisplay.printf("      MAC: %s\n", WiFi.macAddress().c_str());
+    gfxDisplay.printf("  AP SSID: %s\n", AP_SSID);
+    gfxDisplay.printf("  AP PASS: %s\n", AP_PASS);
+    gfxDisplay.printf("  Battery: %4.2f V\n", readBattery());
+    gfxDisplay.printf("    PSRAM: %d bytes\n", psramFound() ? ESP.getPsramSize() : 0);
+    gfxDisplay.printf("   Sensor:\n");
     displaySensors(gfxDisplay, sensorReading);
     gfxDisplay.drawColorSwatch();
 
