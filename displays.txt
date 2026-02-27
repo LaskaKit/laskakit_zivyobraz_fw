@@ -1,0 +1,13 @@
+size    colorspace  name            driver  espink-v3   espink-v2   uespink-v1
+1.54    C4          GDEM0154F51H    GXEPD   1           0           1
+2.13    BW          GDEY0213B74     GXEPD   1           0           0
+2.9     BW          GDEY029T71H     GXEPD   1           0           0
+4.2     C4          GDEM042F52      GXEPD   1           0           0
+4.26    BW          GDEQ0426T82     RAW     1           0           0
+5.83    C4          GDEY0583F41     RAW     1           0           0
+7.4     BW          E2741CS0B2      RAW     1           0           0
+7.4     RBW         E2741FS081      RAW     1           0           0
+7.5     G4          GDEY075T7       RAW     1           0           0
+7.5     RBW         GDEY075Z08      RAW     1           0           0
+10.2    C4          GDEM102F91      GXEPD   1           0           0
+12.48   C4          GDEY1248F51     RAW     1           0           0

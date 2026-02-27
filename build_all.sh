@@ -1,18 +1,32 @@
 #!/bin/bash
 
-# space separated values
-BOARDS="espink-v3 uespink-v1"
-DISPLAYS=$(grep '^#.*DISPLAY_' include/displays.hpp | cut -d '_' -f 2 | tr '\n' ' ')NONE
-# DISPLAYS="GDEY075T7 GDEY075Z08 GDEY1248F51 GDEM102F91 GDEM075F52"
+DISPLAY_LIST_FILE="displays.txt"
+ESPINKV3_RAW=$(awk 'NR>1 && $4=="RAW" && $5=="1" {print $3}' "$DISPLAY_LIST_FILE")
+ESPINKV3_GXEPD=$(awk 'NR>1 && $4=="GXEPD" && $5=="1" {print $3}' "$DISPLAY_LIST_FILE")
+ESPINKV2_RAW=$(awk 'NR>1 && $4=="RAW" && $6=="1" {print $3}' "$DISPLAY_LIST_FILE")
+ESPINKV2_GXEPD=$(awk 'NR>1 && $4=="GXEPD" && $6=="1" {print $3}' "$DISPLAY_LIST_FILE")
+uESPINKV1_RAW=$(awk 'NR>1 && $4=="RAW" && $7=="1" {print $3}' "$DISPLAY_LIST_FILE")
+uESPINKV1_GXEPD=$(awk 'NR>1 && $4=="GXEPD" && $7=="1" {print $3}' "$DISPLAY_LIST_FILE")
 
-for BOARD in $BOARDS; do
-    for DISPLAY in $DISPLAYS; do
-        echo "###############################################"
-        echo "Building Zivyobraz for $BOARD $DISPLAY"
-        echo "###############################################"
-        DISPLAY_TYPE="DISPLAY_$DISPLAY" pio run -e "$BOARD"
-		if [ $? -ne 0 ]; then
-			exit 1
-		fi
+
+function build() {
+    local env="$1"
+    shift
+    for display in $@
+    do
+        echo
+        echo
+        echo "##################################################"
+        echo "Building Zivyobraz for "$env" $display"
+        echo "##################################################"
+        echo
+        DISPLAY_TYPE="DISPLAY_${display}" pio run -e "$env"
     done
-done
+}
+
+build espink-v3 $ESPINKV3_RAW
+build espink-v3-gxepd $ESPINKV3_GXEPD
+build espink-v2 $ESPINKV2_RAW
+build espink-v2-gxepd $ESPINKV2_GXEPD
+build uespink-v1 $uESPINKV1_RAW
+build uespink-v1-gxepd $uESPINKV1_GXEPD
