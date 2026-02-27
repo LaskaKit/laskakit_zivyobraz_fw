@@ -189,7 +189,7 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
     gfxDisplay.drawColorSwatch();
 
     uint16_t qrsize = 25 * scale;
-    gfxDisplay.drawQRCodeText(2, gfxDisplay.height() - qrsize - 2, AP_CONN_STR, static_cast<uint16_t>(RGB565::BLACK), static_cast<uint16_t>(RGB565::WHITE), scale);
+    gfxDisplay.drawQRCodeText(2 * scale, gfxDisplay.height() - qrsize - 2 * scale, AP_CONN_STR, static_cast<uint16_t>(RGB565::BLACK), static_cast<uint16_t>(RGB565::WHITE), scale);
     gfxDisplay.fullUpdate();
 }
 
@@ -342,18 +342,18 @@ void setup()
     uint64_t sleepTimePrecise = 0;
     if (client.getHeader(headerValue, "PreciseSleep")) {
         sleepTimePrecise = String(headerValue).toInt();
-        Serial.printf("Deep sleep: Using PreciseSleep: %d s\n", sleepTimePrecise);
+        Serial.printf("Deep sleep: Using PreciseSleep: %ld s\n", sleepTimePrecise);
         esp_sleep_enable_timer_wakeup(sleepTimePrecise * 1000000);
     } else if (client.getHeader(headerValue, "SleepSeconds")) {
         sleepTimeSeconds = String(headerValue).toInt();
-        Serial.printf("Deep sleep: Using SleepSeconds: %d s\n", sleepTimeSeconds);
+        Serial.printf("Deep sleep: Using SleepSeconds: %ld s\n", sleepTimeSeconds);
         esp_sleep_enable_timer_wakeup(sleepTimeSeconds * 1000000);
     } else if (client.getHeader(headerValue, "Sleep")) {
         sleepTimeMinutes = String(headerValue).toInt();
-        Serial.printf("Deep sleep: Using Sleep: %d m\n", sleepTimeMinutes);
+        Serial.printf("Deep sleep: Using Sleep: %ld m\n", sleepTimeMinutes);
         esp_sleep_enable_timer_wakeup(sleepTimeMinutes * 60 * 1000000);
     } else {
-        Serial.printf("Deep sleep: Using Default: %d s\n", DEEP_SLEEP_TIME_S);
+        Serial.printf("Deep sleep: Using Default: %ld s\n", DEEP_SLEEP_TIME_S);
         esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME_S * 1000000);
     }
     delay(100);

@@ -1,14 +1,15 @@
-size    colorspace  name            driver  espink-v3   espink-v2   uespink-v1
-1.54    C4          GDEM0154F51H    GXEPD   1           0           1
-2.13    BW          GDEY0213B74     GXEPD   1           0           0
-2.9     BW          GDEY029T71H     GXEPD   1           0           0
-4.2     C4          GDEM042F52      GXEPD   1           0           0
-4.26    BW          GDEQ0426T82     RAW     1           0           0
-5.83    C4          GDEY0583F41     RAW     1           0           0
-7.4     BW          E2741CS0B2      RAW     1           0           0
-7.4     RBW         E2741FS081      RAW     1           0           0
-7.5     G4          GDEY075T7       RAW     1           0           0
-7.5     RBW         GDEY075Z08      RAW     1           0           0
-10.2    C4          GDEM102F91      GXEPD   1           0           0
-11.6    C4          GDEY116F51      GXEPD   1           0           0
-12.48   C4          GDEY1248F51     RAW     1           0           0
+size    colorspace  name            driver  espink-v3   espink-v2   uespink-v1  url
+1.54    C4          GDEM0154F51H    GXEPD   1           0           1           [eshop](https://www.laskakit.cz/good-display-gdem0154f51h-1-54--200x200-epaper-displej-4-barvy/)
+2.13    BW          GDEY0213B74     GXEPD   0           1           0           [eshop](https://www.laskakit.cz/good-display-gdey0213b74-2-13--250x122-epaper-displej/)
+2.9     BW          GDEY029T71H     GXEPD   0           1           0			[eshop](https://www.laskakit.cz/good-display-gdey029t71h-2-9--384x168-epaper-displej/)
+4.2     C4          GDEM042F52      GXEPD   1           0           0			[eshop](https://www.laskakit.cz/good-display-gdem042f52-4-2--400x300-epaper-displej-4-barvy/)
+4.26    BW          GDEQ0426T82     RAW     1           0           0			[eshop](https://www.laskakit.cz/good-display-gdeq0426t82-4-26--800x480-epaper-displej-grayscale/)
+5.83    C4          GDEY0583F41     RAW     1           0           0			[eshop](https://www.laskakit.cz/good-display-gdey0583f41-5-83--648x480-epaper-displej-4-barvy/)
+7.4     BW          E2741CS0B2      RAW     1           0           0			[eshop](https://www.laskakit.cz/pervasive-displays-e2741cs0b2-7-4--800x480-epaper-displej/)
+7.4     RBW         E2741FS081      RAW     1           0           0			[eshop](https://www.laskakit.cz/pervasive-displays-e2741fs081-7-4--800x480-epaper-cerveny-displej/)
+7.5     G4          GDEY075T7       RAW     1           0           0			[eshop](https://www.laskakit.cz/good-display-gdey075t7-7-5--800x480-epaper-displej-grayscale/)
+7.5     RBW         GDEY075Z08      RAW     1           0           0			[eshop](https://www.laskakit.cz/good-display-gdey075z08-7-5--800x480-epaper-cerveny-displej/)
+7.5     C4          GDEM075F52      RAW     1           0           0			[eshop](https://www.laskakit.cz/good-display-gdem075f52-7-5--800x480-epaper-displej-4-barvy/)
+10.2    C4          GDEM102F91      GXEPD   1           0           0			[eshop](https://www.laskakit.cz/good-display-gdem102f91-10-2--960x640-epaper-displej-4-barvy/)
+11.6    C4          GDEY116F51      GXEPD   1           0           0			[eshop](https://www.laskakit.cz/good-display-gdey116f51-11-6--960x640-epaper-displej-4-barvy/)
+12.48   C4          GDEY1248F51     RAW     1           0           0			[eshop](https://www.laskakit.cz/good-display-gdey1248z51-12-48--1304x984-epaper-cerveny-displej/)
