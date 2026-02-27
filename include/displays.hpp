@@ -56,6 +56,10 @@
     #include "laskakit_GDEY116F51.hpp"
     #define DISPLAY_T LaskaKit::Epaper::GDEY116F51
 
+#elif defined DISPLAY_GDEY029F51H
+    #include "laskakit_GDEY029F51H.hpp"
+    #define DISPLAY_T LaskaKit::Epaper::GDEY029F51H
+
 #else
     #include "laskakit_none.hpp"
     #define DISPLAY_T LaskaKit::Epaper::None

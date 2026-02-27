@@ -70,6 +70,7 @@ Or you can flash directly from platformio by appending `-t upload` to the build 
 | 1.54 | C4 | GDEM0154F51H | GXEPD | 1 | 0 | 1 | [eshop](https://www.laskakit.cz/good-display-gdem0154f51h-1-54--200x200-epaper-displej-4-barvy/) |
 | 2.13 | BW | GDEY0213B74 | GXEPD | 0 | 1 | 0 | [eshop](https://www.laskakit.cz/good-display-gdey0213b74-2-13--250x122-epaper-displej/) |
 | 2.9 | BW | GDEY029T71H | GXEPD | 0 | 1 | 0 | [eshop](https://www.laskakit.cz/good-display-gdey029t71h-2-9--384x168-epaper-displej/) |
+| 2.9 | C4 | GDEY029F51H | GXEPD | 0 | 1 | 0 | [eshop](https://www.laskakit.cz/good-display-gdey029f51h-2-9--384x168-epaper-displej-4-barvy/) |
 | 4.2 | C4 | GDEM042F52 | GXEPD | 1 | 0 | 0 | [eshop](https://www.laskakit.cz/good-display-gdem042f52-4-2--400x300-epaper-displej-4-barvy/) |
 | 4.26 | BW | GDEQ0426T82 | RAW | 1 | 0 | 0 | [eshop](https://www.laskakit.cz/good-display-gdeq0426t82-4-26--800x480-epaper-displej-grayscale/) |
 | 5.83 | C4 | GDEY0583F41 | RAW | 1 | 0 | 0 | [eshop](https://www.laskakit.cz/good-display-gdey0583f41-5-83--648x480-epaper-displej-4-barvy/) |
