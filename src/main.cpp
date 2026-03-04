@@ -4,10 +4,10 @@
 
 #include "boards.hpp"
 #include "displays.hpp"
-#include "esp32-hal-psram.h"
+// #include "esp32-hal-psram.h"
 #include "laskakit_epaper.hpp"
 #include "zivyobrazclient.hpp"
-#include "sensor.hpp"
+#include "sensor.hpp"v
 #include "epdbus.hpp"
 #include "zdecoder.h"
 #include "gfx.hpp"
@@ -184,7 +184,7 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
     gfxDisplay.printf("  AP SSID: %s\n", AP_SSID);
     gfxDisplay.printf("  AP PASS: %s\n", AP_PASS);
     gfxDisplay.printf("  Battery: %4.2f V\n", readBattery());
-    gfxDisplay.printf("    PSRAM: %d bytes\n", psramFound() ? ESP.getPsramSize() : 0);
+    // gfxDisplay.printf("    PSRAM: %d bytes\n", psramFound() ? ESP.getPsramSize() : 0);
     gfxDisplay.printf("   Sensor:\n");
     displaySensors(gfxDisplay, sensorReading);
     gfxDisplay.drawColorSwatch();
@@ -361,8 +361,29 @@ void setup()
     esp_deep_sleep_start();
 }
 
+
 void loop()
 {
     Serial.println("display test");
-    delay(15000);
+    // if (psramFound()) {
+    //     // --- Large buffer, zero-initialized ---
+    //     Serial.println("PSRAM FOUND!");
+    //     Serial.printf("Total PSRAM:     %u bytes (%.2f MB)\n",
+    //             ESP.getPsramSize(),
+    //             ESP.getPsramSize() / 1048576.0f);
+
+    //         Serial.printf("Free PSRAM:      %u bytes (%.2f MB)\n",
+    //             ESP.getFreePsram(),
+    //             ESP.getFreePsram() / 1048576.0f);
+
+    //         Serial.printf("Min free PSRAM:  %u bytes\n",
+    //             ESP.getMinFreePsram());
+
+    //         // --- Heap info (combined internal + PSRAM if SPIRAM enabled) ---
+    //         Serial.printf("\nTotal heap:      %u bytes\n", ESP.getHeapSize());
+    //         Serial.printf("Free heap:       %u bytes\n",  ESP.getFreeHeap());
+    // } else {
+    //     Serial.println("PSRAM NOT FOUND :(");
+    // }
+    delay(5000);
 }
