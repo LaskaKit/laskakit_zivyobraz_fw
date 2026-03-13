@@ -7,7 +7,7 @@
 // #include "esp32-hal-psram.h"
 #include "laskakit_epaper.hpp"
 #include "zivyobrazclient.hpp"
-#include "sensor.hpp"v
+#include "sensor.hpp"
 #include "epdbus.hpp"
 #include "zdecoder.h"
 #include "gfx.hpp"
@@ -84,14 +84,18 @@ void zdecRowCallback(const struct ZDecoder* decoder) {
             case ColorType::BW:
             case ColorType::G4:
                 gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z2GrayscaleToRGB565Lut, 4));
+                break;
             case ColorType::C4:
             case ColorType::RBW:
             case ColorType::YBW:
                 gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z2ColorToRGB565Lut, 4));
+                break;
             case ColorType::G8:
                 gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z3GrayscaleToRGB565Lut, 8));
+                break;
             case ColorType::C7:
                 gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z3ColorToRGB565Lut, 8));
+                break;
         }
     }
 }
@@ -385,5 +389,5 @@ void loop()
     // } else {
     //     Serial.println("PSRAM NOT FOUND :(");
     // }
-    delay(5000);
+    delay(15000);
 }
