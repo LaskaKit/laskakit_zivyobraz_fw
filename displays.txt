@@ -7,7 +7,7 @@ size    colorspace  name            driver  espink-v3   espink-v2   uespink-v1  
 4.2     C4          GDEM042F52      GXEPD   1           0           0			[eshop](https://www.laskakit.cz/good-display-gdem042f52-4-2--400x300-epaper-displej-4-barvy/)
 4.26    G4          GDEQ0426T82     RAW     1           0           0			[eshop](https://www.laskakit.cz/good-display-gdeq0426t82-4-26--800x480-epaper-displej-grayscale/)
 5.83    C4          GDEY0583F41     RAW     1           0           0			[eshop](https://www.laskakit.cz/good-display-gdey0583f41-5-83--648x480-epaper-displej-4-barvy/)
-5.83    BW          GDEQ0583T81     ???     1           0           0			[eshop](https://www.laskakit.cz/good-display-gdeq0583t31-5-83--648x480-epaper-displej-grayscale/)
+5.83    BW          GDEQ0583T81     RAW     1           0           0			[eshop](https://www.laskakit.cz/good-display-gdeq0583t31-5-83--648x480-epaper-displej-grayscale/)
 7.4     BW          E2741CS0B2      RAW     1           0           0			[eshop](https://www.laskakit.cz/pervasive-displays-e2741cs0b2-7-4--800x480-epaper-displej/)
 7.4     RBW         E2741FS081      RAW     1           0           0			[eshop](https://www.laskakit.cz/pervasive-displays-e2741fs081-7-4--800x480-epaper-cerveny-displej/)
 7.5     G4          GDEY075T7       RAW     1           0           0			[eshop](https://www.laskakit.cz/good-display-gdey075t7-7-5--800x480-epaper-displej-grayscale/)
