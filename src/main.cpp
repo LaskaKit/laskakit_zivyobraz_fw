@@ -56,6 +56,7 @@ SensorReading sensorReading;
 // power on peripherals (I2C bus, display, ...)
 void powerOn()
 {
+    if (!PIN_PWR) return;
     pinMode(PIN_PWR, OUTPUT);
     digitalWrite(PIN_PWR, HIGH);
 }
@@ -63,6 +64,7 @@ void powerOn()
 // power off peripherals (I2C bus, display, ...)
 void powerOff()
 {
+    if (!PIN_PWR) return;
     pinMode(PIN_PWR, OUTPUT);
     digitalWrite(PIN_PWR, LOW);
 }
@@ -177,6 +179,8 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
         gfxDisplay.printf(" ESPink v2\n");
     #elif defined MICRO_ESPINK_V1
         gfxDisplay.printf(" MicroESPink v1\n");
+    #elif defined EPDIY_V7
+        gfxDisplay.printf(" EPDIY v7");
     #else
         gfxDisplay.printf("unknown\n");
     #endif
@@ -221,10 +225,12 @@ bool buttonPressed()
 
 void setup()
 {
-    Wire.setPins(PIN_I2C_SDA, PIN_I2C_SCL);
-    Serial.begin(115200);
-    // while (!Serial) {delay(10);}
     powerOn();
+
+    Wire.setPins(PIN_I2C_SDA, PIN_I2C_SCL);
+    Wire.begin();
+    Serial.begin(115200);
+
     sensorReading = readSensors();
     printSensors(sensorReading);
 
@@ -369,25 +375,5 @@ void setup()
 void loop()
 {
     Serial.println("display test");
-    // if (psramFound()) {
-    //     // --- Large buffer, zero-initialized ---
-    //     Serial.println("PSRAM FOUND!");
-    //     Serial.printf("Total PSRAM:     %u bytes (%.2f MB)\n",
-    //             ESP.getPsramSize(),
-    //             ESP.getPsramSize() / 1048576.0f);
-
-    //         Serial.printf("Free PSRAM:      %u bytes (%.2f MB)\n",
-    //             ESP.getFreePsram(),
-    //             ESP.getFreePsram() / 1048576.0f);
-
-    //         Serial.printf("Min free PSRAM:  %u bytes\n",
-    //             ESP.getMinFreePsram());
-
-    //         // --- Heap info (combined internal + PSRAM if SPIRAM enabled) ---
-    //         Serial.printf("\nTotal heap:      %u bytes\n", ESP.getHeapSize());
-    //         Serial.printf("Free heap:       %u bytes\n",  ESP.getFreeHeap());
-    // } else {
-    //     Serial.println("PSRAM NOT FOUND :(");
-    // }
-    delay(15000);
+    delay(1500);
 }

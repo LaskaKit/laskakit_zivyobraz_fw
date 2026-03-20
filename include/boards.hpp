@@ -25,6 +25,19 @@
     static constexpr int PIN_VBAT = 9;
     static constexpr double VBAT_DIVIDER_RATIO = 1.769;
     static constexpr int PIN_BUTTON = 40;
+#elif defined(EPDIY_V7)
+    static constexpr int PIN_EPD_SDA = -1;
+    static constexpr int PIN_EPD_SCL = -1;
+    static constexpr int PIN_EPD_CS = -1;
+    static constexpr int PIN_EPD_DC = -1;
+    static constexpr int PIN_EPD_RST = -1;
+    static constexpr int PIN_EPD_BUSY = -1;
+    static constexpr int PIN_I2C_SDA = 39;
+    static constexpr int PIN_I2C_SCL = 40;
+    static constexpr int PIN_PWR = -1;
+    static constexpr int PIN_VBAT = 1;
+    static constexpr double VBAT_DIVIDER_RATIO = 5.535;
+    static constexpr int PIN_BUTTON = -1;
 #else
     #error "Unknown BOARD type."
 #endif
