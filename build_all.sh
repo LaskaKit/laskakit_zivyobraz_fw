@@ -21,6 +21,10 @@ function build() {
         echo "##################################################"
         echo
         DISPLAY_TYPE="DISPLAY_${display}" pio run -e "$env"
+        # fail fast
+        if [ $? -ne 0 ]; then
+            exit 1
+        fi
     done
 }
 
