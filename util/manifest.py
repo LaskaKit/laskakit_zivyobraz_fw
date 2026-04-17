@@ -31,7 +31,7 @@ board_chipFamily = {
     "uespink-v1": "ESP32-S3",
     "uespink-v1-gxepd": "ESP32-S3",
     "uespink-v1-bbep": "ESP32-S3",
-    "epdiy-v7": "ESP32-S3",
+    "epdiy-v7-fastepd": "ESP32-S3",
 }
 
 board_displayName = {
@@ -44,7 +44,7 @@ board_displayName = {
     "uespink-v1": "Micro ESPink_V1.2+",
     "uespink-v1-gxepd": "Micro ESPink_V1.2+",
     "uespink-v1-bbep": "Micro ESPink_V1.2+",
-    "epdiy-v7": "EPDiy v7",
+    "epdiy-v7-fastepd": "EPDiy v7",
 }
 
 
