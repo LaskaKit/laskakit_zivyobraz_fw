@@ -1,10 +1,10 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiManager.h>
+#include <esp_log.h>
 
 #include "boards.hpp"
 #include "displays.hpp"
-// #include "esp32-hal-psram.h"
 #include "laskakit_epaper.hpp"
 #include "zivyobrazclient.hpp"
 #include "sensor.hpp"
@@ -177,7 +177,7 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
         gfxDisplay.printf(" ESPink v3\n");
     #elif defined ESPINK_V2
         gfxDisplay.printf(" ESPink v2\n");
-    #elif defined MICRO_ESPINK_V1
+    #elif defined UESPINK_V1
         gfxDisplay.printf(" MicroESPink v1\n");
     #elif defined EPDIY_V7
         gfxDisplay.printf(" EPDIY v7");
@@ -185,7 +185,7 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
         gfxDisplay.printf("unknown\n");
     #endif
     gfxDisplay.printf("  Display: %s\n", DISPLAY_T::NAME);
-    gfxDisplay.printf("      Res: %ux%u\n", DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT);
+    gfxDisplay.printf("      Res: %lux%lu\n", DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT);
     gfxDisplay.printf("    Color: %s\n", colorTypeToCStr(DISPLAY_T::COLORTYPE));
     gfxDisplay.printf("       IP: %s\n", WiFi.softAPIP().toString().c_str());
     gfxDisplay.printf("      MAC: %s\n", WiFi.macAddress().c_str());
@@ -205,9 +205,10 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
 void screenConfigPortalTimeout(GFX<DISPLAY_T>& gfxDisplay)
 {
     gfxDisplay.fillScreen(static_cast<uint16_t>(RGB565::WHITE));
-    gfxDisplay.setCursor(10, 10);
-    gfxDisplay.printf("Configuration portal timerout.");
-    gfxDisplay.printf("Going deep-sleep for some time.");
+    gfxDisplay.setTextSize(2);
+    gfxDisplay.setCursor(0, 0);
+    gfxDisplay.printf("Configuration portal has timed out.\n");
+    gfxDisplay.printf("Press reset to retry.");
     gfxDisplay.fullUpdate();
 }
 
@@ -221,61 +222,26 @@ bool buttonPressed()
 {
     return digitalRead(PIN_BUTTON) == 0;
 }
-#endif  // ESPINK_V3
 
-void setup()
+void handleButtonPress()
 {
-    powerOn();
-
-    Wire.setPins(PIN_I2C_SDA, PIN_I2C_SCL);
-    Wire.begin();
-    Serial.begin(115200);
-
-    sensorReading = readSensors();
-    printSensors(sensorReading);
-
-#ifdef ESPINK_V3
-    setupButton();
     if (buttonPressed()) {
+        log_i("Button pressed. Clear white and reset wifi settings.");
         wm.erase();
         gfxDisplay.fillScreen(static_cast<uint16_t>(RGB565::WHITE));  // Clear the screen
         gfxDisplay.fullUpdate();
-        Serial.printf("Deep sleep: Using Default: %d s\n", DEEP_SLEEP_TIME_S);
-        esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME_S * 1000000);
-        esp_deep_sleep_start();
+        wm.startConfigPortal(AP_SSID, AP_PASS);
+        // uint64_t sleepTimeSeconds = DEEP_SLEEP_TIME_S * 30 * 24 * 30;
+        // log_i("Sleep for %lluh %llum %llus", sleepTimeSeconds / 3600, (sleepTimeSeconds % 3600) / 60, sleepTimeSeconds % 60);
+        // esp_sleep_enable_timer_wakeup(sleepTimeSeconds * 1000000);
+        // WiFi.mode(WIFI_OFF);
+        // esp_deep_sleep_start();
     }
+}
 #endif  // ESPINK_V3
 
-    // set I2C pins
-
-    wm.setConfigPortalTimeout(300);
-    wm.setConnectTimeout(30);
-    wm.setHostname("ESPink");
-
-    wm.setAPCallback([](WiFiManager* myWiFiManager) {
-        Serial.println("Entered config mode");
-        Serial.println(WiFi.softAPIP());
-        Serial.println("WiFi Manager");
-        Serial.println("Connect to: " + String(AP_SSID));
-        screenConfigPortal(gfxDisplay);
-    });
-
-    if (!wm.autoConnect(AP_SSID, AP_PASS)) {
-        Serial.println("Failed to connect, starting configuration portal");
-        if (!wm.startConfigPortal(AP_SSID, AP_PASS)) {
-            Serial.println("Failed to connect and hit timeout.");
-            screenConfigPortalTimeout(gfxDisplay);
-            esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME_S * 1000000);
-            delay(100);
-            esp_deep_sleep_start();
-        }
-    }
-
-    Serial.println("\nConnected to WiFi!");
-    Serial.println("Local IP: " + WiFi.localIP().toString());
-    Serial.println("MAC: " + WiFi.macAddress());
-
-
+String assembleUrl()
+{
     String path;
     path += "/?mac=" + WiFi.macAddress();
     path += "&x=" + String(DISPLAY_T::WIDTH);
@@ -287,7 +253,6 @@ void setup()
     path += "&ssid=" + WiFi.SSID();
     path += "&rssi=" + String(WiFi.RSSI());
     path += "&v=" + String(readBattery());
-
     if (sensorReading.flag & Sensor::_SHT4x) {
         path += "&temp=" + String(sensorReading.sht.temperature);
         path += "&hum=", String(sensorReading.sht.humidity);
@@ -309,71 +274,105 @@ void setup()
     } else if (sensorReading.flag & Sensor::_BH1750) {
         path += "&temp=" + String(sensorReading.bh1750.lux);
     }
+    return path;
+}
 
-    unsigned long start = millis();
+// return sleep time in seconds
+uint64_t parseSleepTime()
+{
+    char headerValue[20];  // tmp buffer
+    if (client.getHeader(headerValue, "PreciseSleep")) {
+        log_i("Use PreciseSleep");
+        return String(headerValue).toInt();
+    } else if (client.getHeader(headerValue, "SleepSeconds")) {
+        log_i("Use SleepSeconds");
+        return String(headerValue).toInt();
+    } else if (client.getHeader(headerValue, "Sleep")) {
+        log_i("Using Sleep");
+        return String(headerValue).toInt() * 60;
+    } else {
+        log_i("No sleep in headers. Using default");
+        return DEEP_SLEEP_TIME_S;
+    }
+}
+
+void setup()
+{
+    Wire.setPins(PIN_I2C_SDA, PIN_I2C_SCL);
+    Serial.begin(115200);
+#ifdef ESPINK_V3
+    setupButton();
+#endif
+    wm.setConfigPortalTimeout(300);
+    wm.setConnectTimeout(30);
+    wm.setHostname("ESPink");
+    wm.setAPCallback([](WiFiManager* myWiFiManager) {
+        screenConfigPortal(gfxDisplay);
+    });
+    wm.setConfigPortalTimeoutCallback([]() {
+        screenConfigPortalTimeout(gfxDisplay);
+        uint64_t sleepTimeSeconds = DEEP_SLEEP_TIME_S * 30 * 24 * 30;
+        log_i("Sleep for %lluh %llum %llus", sleepTimeSeconds / 3600, (sleepTimeSeconds % 3600) / 60, sleepTimeSeconds % 60);
+        esp_sleep_enable_timer_wakeup(sleepTimeSeconds * 1000000);
+        WiFi.mode(WIFI_OFF);
+        esp_deep_sleep_start();
+    });
+    log_i("Start");
+
+    // power on peripherals
+    log_i("Peripherals ON");
+    powerOn();
+#ifdef ESPINK_V3
+    handleButtonPress();
+#endif
+
+    // read sensors
+    log_i("Reading sensors.");
+    readSensors();
+
+    // connect to wifi
+    bool wmStatus = wm.autoConnect(AP_SSID, AP_PASS);
+    if (!wmStatus) {
+        log_i("Could not connect");
+        return;
+    }
+    log_i("Connected to WiFi!");
+    log_i("Local IP: %s", WiFi.localIP().toString());
+    log_i("MAC: %s", WiFi.macAddress());
+
+    String path = assembleUrl();
+    log_i("Downloading image.");
     client.get(path.c_str());
-    Serial.printf("Download time: %lu ms\n", millis() - start);
 
     // shutdown wifi
+    log_i("Shutting down WiFi");
     WiFi.disconnect();
     WiFi.mode(WIFI_OFF);
 
+    // update display
     if (decoder.state() == ZERROR) {
-        printf("Decoder encountered an error.\n");
-        printf("Reason: ");
-        switch (decoder.error()) {
-            case ZERROR_HEADER:
-                printf("header\n");
-                break;
-            case ZERROR_OVERFLOW:
-                printf("overflow\n");
-                break;
-            case ZERROR_BUFFER:
-                printf("buffer is NULL\n");
-                break;
-            case ZERROR_CALLBACK:
-                printf("callback is NULL\n");
-                break;
-        }
+        log_e("Decoder encountered an error.");
+        log_e("Reason: %d", decoder.error());
+    } else {
+        log_i("Redrawing display.");
+        display.fullUpdate();
     }
 
-    start = millis();
-    if (decoder.state() != ZERROR) {
-        display.fullUpdate();
-    } else {
-        Serial.println("Not updating due to decode error.");
-    }
-    Serial.printf("Update time: %lu ms\n", millis() - start);
+    // power off peripherals
+    log_i("Peripherals OFF");
     powerOff();
 
-    // Process sleep headers
-    char headerValue[20];  // tmp buffer
-    uint64_t sleepTimeMinutes = 0;
-    uint64_t sleepTimeSeconds = 0;
-    uint64_t sleepTimePrecise = 0;
-    if (client.getHeader(headerValue, "PreciseSleep")) {
-        sleepTimePrecise = String(headerValue).toInt();
-        Serial.printf("Deep sleep: Using PreciseSleep: %ld s\n", sleepTimePrecise);
-        esp_sleep_enable_timer_wakeup(sleepTimePrecise * 1000000);
-    } else if (client.getHeader(headerValue, "SleepSeconds")) {
-        sleepTimeSeconds = String(headerValue).toInt();
-        Serial.printf("Deep sleep: Using SleepSeconds: %ld s\n", sleepTimeSeconds);
-        esp_sleep_enable_timer_wakeup(sleepTimeSeconds * 1000000);
-    } else if (client.getHeader(headerValue, "Sleep")) {
-        sleepTimeMinutes = String(headerValue).toInt();
-        Serial.printf("Deep sleep: Using Sleep: %ld m\n", sleepTimeMinutes);
-        esp_sleep_enable_timer_wakeup(sleepTimeMinutes * 60 * 1000000);
-    } else {
-        Serial.printf("Deep sleep: Using Default: %ld s\n", DEEP_SLEEP_TIME_S);
-        esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME_S * 1000000);
-    }
-    delay(100);
+    // deep sleep
+    uint64_t sleepTimeSeconds = parseSleepTime();
+    log_i("Sleep for %lluh %llum %llus", sleepTimeSeconds / 3600, (sleepTimeSeconds % 3600) / 60, sleepTimeSeconds % 60);
+    esp_sleep_enable_timer_wakeup(sleepTimeSeconds * 1000000);
     esp_deep_sleep_start();
 }
 
 
 void loop()
 {
-    Serial.println("display test");
+    // Serial.println("test");
+    log_i("test");
     delay(1500);
 }
