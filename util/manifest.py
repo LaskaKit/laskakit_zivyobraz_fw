@@ -23,28 +23,16 @@ manifest_template = {
 
 board_chipFamily = {
     "espink-v2": "ESP32",
-    "espink-v2-gxepd": "ESP32",
-    "espink-v2-bbep": "ESP32",
     "espink-v3": "ESP32-S3",
-    "espink-v3-gxepd": "ESP32-S3",
-    "espink-v3-bbep": "ESP32-S3",
     "uespink-v1": "ESP32-S3",
-    "uespink-v1-gxepd": "ESP32-S3",
-    "uespink-v1-bbep": "ESP32-S3",
-    "epdiy-v7-fastepd": "ESP32-S3",
+    "epdiy-v7": "ESP32-S3",
 }
 
 board_displayName = {
     "espink-v2": "ESPink_V2.6(7)",
-    "espink-v2-gxepd": "ESPink_V2.6(7)",
-    "espink-v2-bbep": "ESPink_V2.6(7)",
     "espink-v3": "ESPink_V3.5+",
-    "espink-v3-gxepd": "ESPink_V3.5+",
-    "espink-v3-bbep": "ESPink_V3.5+",
     "uespink-v1": "Micro ESPink_V1.2+",
-    "uespink-v1-gxepd": "Micro ESPink_V1.2+",
-    "uespink-v1-bbep": "Micro ESPink_V1.2+",
-    "epdiy-v7-fastepd": "EPDiy v7",
+    "epdiy-v7": "EPDiy v7",
 }
 
 

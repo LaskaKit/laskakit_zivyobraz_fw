@@ -5,7 +5,7 @@ import os
 from util.manifest import ZivyObrazManifest
 
 display_type = os.environ.get("DISPLAY_TYPE", "DISPLAY_NONE")
-board = env.get("PIOENV")
+board = env.get("PIOENV").rstrip("-gxepd").rstrip("-bbep").rstrip("-fastepd")
 version = env.GetProjectConfig().get("common", "version")
 
 APP_BIN = "$BUILD_DIR/${PROGNAME}.bin"
