@@ -7,6 +7,7 @@
 #include <SensirionI2cStcc4.h>
 #include <SensirionI2CSgp41.h>
 #include <BH1750.h>
+#include <esp_log.h>
 
 Adafruit_SHT4x sht4;
 Adafruit_BME280 bme;
@@ -110,7 +111,7 @@ namespace LaskaKit::ZivyObraz {
         }
         SCD4.measureSingleShot();
         while (!SCD4.readMeasurement()) {
-            Serial.println("Waiting for SCD4 measurement...");
+            log_i("Waiting for SCD4 measurement...");
             delay(1000);
         }
         reading.scd.temperature = SCD4.getTemperature();
@@ -133,9 +134,9 @@ namespace LaskaKit::ZivyObraz {
         // Warmup to get rid of the 390 ppm start value
         error = stcc4.startContinuousMeasurement();
         if (error) { return false; }
-        Serial.println("Waiting 30s to warmup STCC4");
+        log_i("Waiting 30s to warmup STCC4");
         delay(30 * 1000);
-        Serial.println("STCC4 warmup complete");
+        log_i("STCC4 warmup complete");
 
         error = stcc4.stopContinuousMeasurement();
         if (error) { return false; }
@@ -160,7 +161,7 @@ namespace LaskaKit::ZivyObraz {
         reading.stcc4.humidity = static_cast<double>(humidity);
         reading.stcc4.co2 = static_cast<double>(co2);
 
-        Serial.printf("STCC4 status: %d\n", status);
+        log_i("STCC4 status: %d\n", status);
         return true;
     }
 
@@ -224,26 +225,24 @@ namespace LaskaKit::ZivyObraz {
 
     void printSensors(SensorReading& reading)
     {
-        Serial.println("Detected sensors:");
+        log_i("Detected sensors:");
         if (reading.flag & Sensor::_SHT4x) {
-            Serial.printf("SHT4x -> T: %f H: %f\n", reading.sht.temperature, reading.sht.humidity);
+            log_i("SHT4x -> T: %f H: %f", reading.sht.temperature, reading.sht.humidity);
         }
         if (reading.flag & Sensor::_BME280) {
-            Serial.printf("BME280 -> T: %f H: %f P: %f\n", reading.bme.temperature, reading.bme.humidity, reading.bme.pressure);
+            log_i("BME280 -> T: %f H: %f P: %f", reading.bme.temperature, reading.bme.humidity, reading.bme.pressure);
         }
         if (reading.flag & Sensor::_SCD4x) {
-            Serial.printf("SCD4x -> T: %f H: %f CO2: %f\n", reading.scd.temperature, reading.scd.humidity, reading.scd.co2);
+            log_i("SCD4x -> T: %f H: %f CO2: %f", reading.scd.temperature, reading.scd.humidity, reading.scd.co2);
         }
         if (reading.flag & Sensor::_STCC4) {
-            Serial.printf("STCC4 -> T: %f H: %f CO2: %f\n", reading.stcc4.temperature, reading.stcc4.humidity, reading.stcc4.co2);
+            log_i("STCC4 -> T: %f H: %f CO2: %f", reading.stcc4.temperature, reading.stcc4.humidity, reading.stcc4.co2);
         }
         if (reading.flag & Sensor::_SGP41) {
-            Serial.printf("SGP41 -> VOC: %d NOx: %d\n", reading.sgp41.voc, reading.sgp41.nox);
+            log_i("SGP41 -> VOC: %d NOx: %d", reading.sgp41.voc, reading.sgp41.nox);
         }
         if (reading.flag & Sensor::_BH1750) {
-            Serial.printf("BH1750 -> LUX: %f\n", reading.bh1750.lux);
+            log_i("BH1750 -> LUX: %f", reading.bh1750.lux);
         }
-        Serial.println();
     }
 }
-

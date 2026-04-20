@@ -104,30 +104,30 @@ void zdecRowCallback(const struct ZDecoder* decoder) {
 
 void downloadCallback(ContentType contentType, const uint8_t* data, size_t datalen)
 {
-    Serial.printf("Download callback %ld bytes\n", datalen);
+    log_i("Download callback %ld bytes\n", datalen);
     switch (contentType) {
         case ContentType::APPLICATION_JSON:
-            Serial.println("Received JSON");
+            log_i("Received JSON");
             break;
         case ContentType::IMAGE_Z2:
         case ContentType::IMAGE_Z3:
-            Serial.println("Received image/z2-3");
+            log_i("Received image/z2-3");
             decoder.decode(data, datalen);
             break;
         case ContentType::IMAGE_BMP:
-            Serial.println("Received image/bmp");
+            log_i("Received image/bmp");
             break;
         case ContentType::IMAGE_PNG:
-            Serial.println("Received image/png");
+            log_i("Received image/png");
             break;
         case ContentType::TEXT_PLAIN:
-            Serial.println("Received text/plain");
+            log_i("Received text/plain");
             break;
         case ContentType::TEXT_HTML:
-            Serial.println("Received text/html");
+            log_i("Received text/html");
             break;
         case ContentType::UNKNOWN:
-            Serial.println("Received unsuported content type");
+            log_i("Received unsuported content type");
             break;
     }
 }
@@ -372,7 +372,6 @@ void setup()
 
 void loop()
 {
-    // Serial.println("test");
     log_i("test");
     delay(1500);
 }
