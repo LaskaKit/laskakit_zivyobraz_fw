@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <WiFiManager.h>
 #include <esp_log.h>
+#include <ArduinoJson.h>
 
 #include "boards.hpp"
 #include "displays.hpp"
@@ -10,13 +11,14 @@
 #include "sensor.hpp"
 #include "epdbus.hpp"
 #include "zdecoder.h"
+#include "bmpdecoder.h"
 #include "gfx.hpp"
 
 // ZIVYOBRAZ CLIENT PARAMS
 namespace {
     constexpr const char* ZIVYOBRAZ_HOST = "https://cdn.zivyobraz.eu";
-    constexpr const char* ZIVYOBRAZ_FIRMWARE_VERSION = "2.4";
-    constexpr const char* ZIVYOBRAZ_FIRMWARE_TYPE = VERSION;
+    constexpr const char* ZIVYOBRAZ_API_VERSION = "3.0";
+    constexpr const char* ZIVYOBRAZ_FIRMWARE_VERSION = VERSION;
 
     constexpr const char* AP_SSID = "ESPink";
     constexpr const char* AP_PASS = "zivyobraz";
@@ -45,11 +47,9 @@ GFX<DISPLAY_T> gfxDisplay(&display);
 WiFiManager wm;
 uint8_t rowBuffer[DISPLAY_T::WIDTH];
 
-void zdecRowCallback(const struct ZDecoder* decoder);  // forward declaration
-ZDec decoder(DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT, rowBuffer, zdecRowCallback);
-
-void downloadCallback(ContentType contentType, const uint8_t* data, size_t datalen);  // forward declaration
-ZivyObrazClient client(ZIVYOBRAZ_HOST, downloadCallback);
+ZDec zDecoder;
+BMPDec bmpDecoder;
+ZivyObrazClient zoClient;;
 
 SensorReading sensorReading;
 
@@ -79,8 +79,9 @@ double readBattery()
 }
 
 
-// universal callback
-void zdecRowCallback(const struct ZDecoder* decoder) {
+// universal row callback
+template <class DECODER_T>
+void rowCallback(const DECODER_T* decoder) {
     for (uint16_t col = 0; col < decoder->width; col++) {
         switch (DISPLAY_T::COLORTYPE) {
             case ColorType::BW:
@@ -102,34 +103,16 @@ void zdecRowCallback(const struct ZDecoder* decoder) {
     }
 }
 
-void downloadCallback(ContentType contentType, const uint8_t* data, size_t datalen)
+bool handleZ(const uint8_t* data, size_t len)
 {
-    log_i("Download callback %ld bytes\n", datalen);
-    switch (contentType) {
-        case ContentType::APPLICATION_JSON:
-            log_i("Received JSON");
-            break;
-        case ContentType::IMAGE_Z2:
-        case ContentType::IMAGE_Z3:
-            log_i("Received image/z2-3");
-            decoder.decode(data, datalen);
-            break;
-        case ContentType::IMAGE_BMP:
-            log_i("Received image/bmp");
-            break;
-        case ContentType::IMAGE_PNG:
-            log_i("Received image/png");
-            break;
-        case ContentType::TEXT_PLAIN:
-            log_i("Received text/plain");
-            break;
-        case ContentType::TEXT_HTML:
-            log_i("Received text/html");
-            break;
-        case ContentType::UNKNOWN:
-            log_i("Received unsuported content type");
-            break;
-    }
+    zDecoder.decode(data, len);
+    return zDecoder.state() != ZERROR;
+}
+
+bool handleBMP(const uint8_t* data, size_t len)
+{
+    bmpDecoder.decode(data, len);
+    return bmpDecoder.state() != BMP_ERROR;
 }
 
 void displaySensors(GFX<DISPLAY_T>& gfxDisplay, SensorReading& reading)
@@ -200,6 +183,7 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
     uint16_t qrsize = 25 * scale;
     gfxDisplay.drawQRCodeText(2 * scale, gfxDisplay.height() - qrsize - 2 * scale, AP_CONN_STR, static_cast<uint16_t>(RGB565::BLACK), static_cast<uint16_t>(RGB565::WHITE), scale);
     gfxDisplay.fullUpdate();
+    log_i("Displaying config portal display.");
 }
 
 void screenConfigPortalTimeout(GFX<DISPLAY_T>& gfxDisplay)
@@ -240,54 +224,18 @@ void handleButtonPress()
 }
 #endif  // ESPINK_V3
 
-String assembleUrl()
-{
-    String path;
-    path += "/?mac=" + WiFi.macAddress();
-    path += "&x=" + String(DISPLAY_T::WIDTH);
-    path += "&y=" + String(DISPLAY_T::HEIGHT);
-    path += "&c=" + String(colorTypeToCStr(DISPLAY_T::COLORTYPE));
-    path += "&fw=" + String(ZIVYOBRAZ_FIRMWARE_VERSION);
-    path += "&fwType=" + String(ZIVYOBRAZ_FIRMWARE_TYPE);
-    path += "&timestamp_check=1";
-    path += "&ssid=" + WiFi.SSID();
-    path += "&rssi=" + String(WiFi.RSSI());
-    path += "&v=" + String(readBattery());
-    if (sensorReading.flag & Sensor::_SHT4x) {
-        path += "&temp=" + String(sensorReading.sht.temperature);
-        path += "&hum=", String(sensorReading.sht.humidity);
-    } else if (sensorReading.flag & Sensor::_BME280) {
-        path += "&temp=" + String(sensorReading.bme.temperature);
-        path += "&hum=" + String(sensorReading.bme.humidity);
-        path += "&pres=" + String(sensorReading.bme.pressure);
-    } else if (sensorReading.flag & Sensor::_SCD4x) {
-        path += "&temp=" + String(sensorReading.scd.temperature);
-        path += "&hum=" + String(sensorReading.scd.humidity);
-        path += "&pres=" + String(sensorReading.scd.co2);
-    } else if (sensorReading.flag & Sensor::_STCC4) {
-        path += "&temp=" + String(sensorReading.stcc4.temperature);
-        path += "&hum=" + String(sensorReading.stcc4.humidity);
-        path += "&pres=" + String(sensorReading.stcc4.co2);
-    } else if (sensorReading.flag & Sensor::_SGP41) {
-        path += "&temp=" + String(sensorReading.sgp41.nox);
-        path += "&hum=" + String(sensorReading.sgp41.voc);
-    } else if (sensorReading.flag & Sensor::_BH1750) {
-        path += "&temp=" + String(sensorReading.bh1750.lux);
-    }
-    return path;
-}
 
 // return sleep time in seconds
 uint64_t parseSleepTime()
 {
     char headerValue[20];  // tmp buffer
-    if (client.getHeader(headerValue, "PreciseSleep")) {
+    if (zoClient.getHeader(headerValue, 20, "PreciseSleep")) {
         log_i("Use PreciseSleep");
         return String(headerValue).toInt();
-    } else if (client.getHeader(headerValue, "SleepSeconds")) {
+    } else if (zoClient.getHeader(headerValue, 20, "SleepSeconds")) {
         log_i("Use SleepSeconds");
         return String(headerValue).toInt();
-    } else if (client.getHeader(headerValue, "Sleep")) {
+    } else if (zoClient.getHeader(headerValue, 20, "Sleep")) {
         log_i("Using Sleep");
         return String(headerValue).toInt() * 60;
     } else {
@@ -296,6 +244,44 @@ uint64_t parseSleepTime()
     }
 }
 
+String buildJsonPayload()
+{
+    JsonDocument doc;
+    doc["apiVersion"] = ZIVYOBRAZ_API_VERSION;
+    #if defined ESPINK_V3
+        doc["board"] = "ESPink_V3";
+    #elif defined ESPINK_V2
+        doc["board"] = "ESPink_V2";
+    #elif defined UESPINK_V1
+        doc["board"] = "Micro ESPink_V1";
+    #elif defined EPDIY_V7
+        doc["board"] = "EPDIY_V7";
+    #else
+        doc["board"] = "unknown";
+    #endif
+    doc["fwVersion"] = ZIVYOBRAZ_FIRMWARE_VERSION;
+
+    JsonObject system = doc["system"].to<JsonObject>();
+    system["vccVoltage"] = readBattery();
+
+    JsonObject network = doc["network"].to<JsonObject>();
+    network["ssid"] = WiFi.SSID();
+    network["rssi"] = WiFi.RSSI();
+    network["mac"] = WiFi.macAddress();
+    network["ipAddress"] = WiFi.localIP();
+
+    JsonObject display = doc["display"].to<JsonObject>();
+    display["type"] = DISPLAY_T::NAME;
+    display["width"] = DISPLAY_T::WIDTH;
+    display["height"] = DISPLAY_T::HEIGHT;
+    display["colorType"] = colorTypeToCStr(DISPLAY_T::COLORTYPE);
+
+    String out;
+    serializeJsonPretty(doc, out);
+    return out;
+}
+
+
 void setup()
 {
     Wire.setPins(PIN_I2C_SDA, PIN_I2C_SCL);
@@ -303,6 +289,7 @@ void setup()
 #ifdef ESPINK_V3
     setupButton();
 #endif
+
     wm.setConfigPortalTimeout(300);
     wm.setConnectTimeout(30);
     wm.setHostname("ESPink");
@@ -322,6 +309,7 @@ void setup()
     // power on peripherals
     log_i("Peripherals ON");
     powerOn();
+
 #ifdef ESPINK_V3
     handleButtonPress();
 #endif
@@ -337,33 +325,46 @@ void setup()
         return;
     }
     log_i("Connected to WiFi!");
-    log_i("Local IP: %s", WiFi.localIP().toString());
-    log_i("MAC: %s", WiFi.macAddress());
+    // log_i("Local IP: %s", WiFi.localIP().toString());
+    // log_i("MAC: %s", WiFi.macAddress());
 
-    String path = assembleUrl();
+
+    // setup decoders
+    zDecoder.init(DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT, rowBuffer, rowCallback);
+    bmpDecoder.init(DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT, rowBuffer, z2GrayscaleToRGB565Lut, 4, rowCallback);
+
+    // setup zivyobraz client
+    zoClient.setBaseUrl(ZIVYOBRAZ_HOST);
+    zoClient.setApiKey("12345678");
+    zoClient.registerHandler(ContentType::IMAGE_Z2, handleZ);
+    zoClient.registerHandler(ContentType::IMAGE_Z3, handleZ);
+    zoClient.registerHandler(ContentType::IMAGE_BMP, handleBMP);
+
+
     log_i("Downloading image.");
-    client.get(path.c_str());
+    int code = zoClient.post("/index.php?timestampCheck=1", buildJsonPayload());
+    log_i("Received code: %d", code);
+    uint64_t sleepTimeSeconds = DEEP_SLEEP_TIME_S;  // default
+
+
+    if (code == 200) {
+        sleepTimeSeconds = parseSleepTime();
+        int bytes = zoClient.readStream();
+        log_i("Received %d bytes.", bytes);
+        log_i("Redrawing display.");
+        display.fullUpdate();
+    }
 
     // shutdown wifi
     log_i("Shutting down WiFi");
     WiFi.disconnect();
     WiFi.mode(WIFI_OFF);
 
-    // update display
-    if (decoder.state() == ZERROR) {
-        log_e("Decoder encountered an error.");
-        log_e("Reason: %d", decoder.error());
-    } else {
-        log_i("Redrawing display.");
-        display.fullUpdate();
-    }
-
     // power off peripherals
     log_i("Peripherals OFF");
     powerOff();
 
     // deep sleep
-    uint64_t sleepTimeSeconds = parseSleepTime();
     log_i("Sleep for %lluh %llum %llus", sleepTimeSeconds / 3600, (sleepTimeSeconds % 3600) / 60, sleepTimeSeconds % 60);
     esp_sleep_enable_timer_wakeup(sleepTimeSeconds * 1000000);
     esp_deep_sleep_start();
