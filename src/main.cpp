@@ -180,7 +180,7 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
     displaySensors(gfxDisplay, sensorReading);
     gfxDisplay.drawColorSwatch();
 
-    uint16_t qrsize = 25 * scale;
+    uint16_t qrsize = 29 * scale;
     gfxDisplay.drawQRCodeText(2 * scale, gfxDisplay.height() - qrsize - 2 * scale, AP_CONN_STR, static_cast<uint16_t>(RGB565::BLACK), static_cast<uint16_t>(RGB565::WHITE), scale);
     gfxDisplay.fullUpdate();
     log_i("Displaying config portal display.");
@@ -284,50 +284,15 @@ String buildJsonPayload()
 
 void setup()
 {
-    Wire.setPins(PIN_I2C_SDA, PIN_I2C_SCL);
-    Serial.begin(115200);
-#ifdef ESPINK_V3
-    setupButton();
-#endif
-
-    wm.setConfigPortalTimeout(300);
-    wm.setConnectTimeout(30);
-    wm.setHostname("ESPink");
-    wm.setAPCallback([](WiFiManager* myWiFiManager) {
-        screenConfigPortal(gfxDisplay);
-    });
-    wm.setConfigPortalTimeoutCallback([]() {
-        screenConfigPortalTimeout(gfxDisplay);
-        uint64_t sleepTimeSeconds = DEEP_SLEEP_TIME_S * 30 * 24 * 30;
-        log_i("Sleep for %lluh %llum %llus", sleepTimeSeconds / 3600, (sleepTimeSeconds % 3600) / 60, sleepTimeSeconds % 60);
-        esp_sleep_enable_timer_wakeup(sleepTimeSeconds * 1000000);
-        WiFi.mode(WIFI_OFF);
-        esp_deep_sleep_start();
-    });
-    log_i("Start");
-
     // power on peripherals
-    log_i("Peripherals ON");
     powerOn();
 
-#ifdef ESPINK_V3
-    handleButtonPress();
-#endif
+    // setup interfaces
+    Wire.setPins(PIN_I2C_SDA, PIN_I2C_SCL);
+    Serial.begin(115200);
 
-    // read sensors
-    log_i("Reading sensors.");
-    readSensors();
-
-    // connect to wifi
-    bool wmStatus = wm.autoConnect(AP_SSID, AP_PASS);
-    if (!wmStatus) {
-        log_i("Could not connect");
-        return;
-    }
-    log_i("Connected to WiFi!");
-    // log_i("Local IP: %s", WiFi.localIP().toString());
-    // log_i("MAC: %s", WiFi.macAddress());
-
+    // setup display
+    display.init();
 
     // setup decoders
     zDecoder.init(DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT, rowBuffer, rowCallback);
@@ -339,6 +304,44 @@ void setup()
     zoClient.registerHandler(ContentType::IMAGE_Z2, handleZ);
     zoClient.registerHandler(ContentType::IMAGE_Z3, handleZ);
     zoClient.registerHandler(ContentType::IMAGE_BMP, handleBMP);
+
+    // setup wifi manager
+    wm.setConfigPortalTimeout(300);
+    wm.setConnectTimeout(30);
+    wm.setHostname("ESPink");
+    wm.setAPCallback([](WiFiManager* myWiFiManager) {
+        EPDBus::UseSleep(false);
+        screenConfigPortal(gfxDisplay);
+        EPDBus::UseSleep(true);
+    });
+    wm.setConfigPortalTimeoutCallback([]() {
+        WiFi.mode(WIFI_OFF);
+        screenConfigPortalTimeout(gfxDisplay);
+        uint64_t sleepTimeSeconds = DEEP_SLEEP_TIME_S * 30 * 24 * 30;
+        log_i("Sleep for %lluh %llum %llus", sleepTimeSeconds / 3600, (sleepTimeSeconds % 3600) / 60, sleepTimeSeconds % 60);
+        esp_sleep_enable_timer_wakeup(sleepTimeSeconds * 1000000);
+        esp_deep_sleep_start();
+    });
+
+#ifdef ESPINK_V3
+    setupButton();
+    handleButtonPress();
+#endif
+
+    // read sensors
+    log_i("Reading sensors.");
+    readSensors();
+
+    log_i("Connecting to wifi.");
+    // connect to wifi
+    bool wmStatus = wm.autoConnect(AP_SSID, AP_PASS);
+    if (!wmStatus) {
+        log_i("Could not connect");
+        return;
+    }
+    log_i("Connected to WiFi!");
+    // log_i("Local IP: %s", WiFi.localIP().toString());
+    // log_i("MAC: %s", WiFi.macAddress());
 
 
     log_i("Downloading image.");
