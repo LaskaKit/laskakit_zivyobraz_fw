@@ -15,21 +15,18 @@
 #include "gfx.hpp"
 
 // ZIVYOBRAZ CLIENT PARAMS
-namespace {
-    constexpr const char* ZIVYOBRAZ_HOST = "https://cdn.zivyobraz.eu";
-    constexpr const char* ZIVYOBRAZ_API_VERSION = "3.0";
-    constexpr const char* ZIVYOBRAZ_FIRMWARE_VERSION = VERSION;
+#define ZIVYOBRAZ_HOST = "https://cdn.zivyobraz.eu";
+#define ZIVYOBRAZ_API_VERSION = "3.0";
+#define ZIVYOBRAZ_FIRMWARE_VERSION = VERSION;
 
-    constexpr const char* AP_SSID = "ESPink";
-    constexpr const char* AP_PASS = "zivyobraz";
-    constexpr const char* AP_CONN_STR = "WIFI:S:ESPink;T:WPA;P:zivyobraz;";
+#define AP_SSID = "ESPink";
+#define AP_PASS = "zivyobraz";
+#define AP_CONN_STR = "WIFI:S:" AP_SSID ";T:WPA;P:" AP_PASS ";";
 
-    constexpr size_t DEEP_SLEEP_TIME_S = 120;
-}
+#define DEEP_SLEEP_TIME_S = 120;
+
 
 // ---------------
-
-
 using namespace LaskaKit::ZivyObraz;
 using namespace LaskaKit::Epaper;
 
