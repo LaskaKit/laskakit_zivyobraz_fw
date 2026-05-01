@@ -16,11 +16,10 @@
 #include "apsettings.hpp"
 
 // ZIVYOBRAZ CLIENT PARAMS
-#define ZIVYOBRAZ_HOST = "https://cdn.zivyobraz.eu";
-#define ZIVYOBRAZ_API_VERSION = "3.0";
-#define ZIVYOBRAZ_FIRMWARE_VERSION = VERSION;
-#define DEEP_SLEEP_TIME_S = 120;
-
+#define ZIVYOBRAZ_HOST "https://cdn.zivyobraz.eu"
+#define ZIVYOBRAZ_API_VERSION "3.0"
+#define ZIVYOBRAZ_FIRMWARE_VERSION VERSION
+#define DEEP_SLEEP_TIME_S 120
 
 // ---------------
 using namespace LaskaKit::ZivyObraz;
@@ -166,8 +165,8 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
     gfxDisplay.printf("    Color: %s\n", colorTypeToCStr(DISPLAY_T::COLORTYPE));
     gfxDisplay.printf("       IP: %s\n", WiFi.softAPIP().toString().c_str());
     gfxDisplay.printf("      MAC: %s\n", WiFi.macAddress().c_str());
-    gfxDisplay.printf("  AP SSID: %s\n", AP_SSID);
-    gfxDisplay.printf("  AP PASS: %s\n", AP_PASS);
+    gfxDisplay.printf("  AP SSID: %s\n", apSettings.ssid.c_str());
+    gfxDisplay.printf("  AP PASS: %s\n", apSettings.password.c_str());
     gfxDisplay.printf("  Battery: %4.2f V\n", readBattery());
     // gfxDisplay.printf("    PSRAM: %d bytes\n", psramFound() ? ESP.getPsramSize() : 0);
     gfxDisplay.printf("   Sensor:\n");
@@ -208,7 +207,7 @@ void handleButtonPress()
         wm.erase();
         gfxDisplay.fillScreen(static_cast<uint16_t>(RGB565::WHITE));  // Clear the screen
         gfxDisplay.fullUpdate();
-        wm.startConfigPortal(apSettings.ssid, apSettings.password);
+        wm.startConfigPortal(apSettings.ssid.c_str(), apSettings.password.c_str());
         // uint64_t sleepTimeSeconds = DEEP_SLEEP_TIME_S * 30 * 24 * 30;
         // log_i("Sleep for %lluh %llum %llus", sleepTimeSeconds / 3600, (sleepTimeSeconds % 3600) / 60, sleepTimeSeconds % 60);
         // esp_sleep_enable_timer_wakeup(sleepTimeSeconds * 1000000);
@@ -329,7 +328,7 @@ void setup()
 
     log_i("Connecting to wifi.");
     // connect to wifi
-    bool wmStatus = wm.autoConnect(apSettings.ssid, apSettings.password);
+    bool wmStatus = wm.autoConnect(apSettings.ssid.c_str(), apSettings.password.c_str());
     if (!wmStatus) {
         log_i("Could not connect");
         return;
