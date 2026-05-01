@@ -49,7 +49,7 @@ uint8_t rowBuffer[DISPLAY_T::WIDTH];
 
 ZDec zDecoder;
 BMPDec bmpDecoder;
-ZivyObrazClient zoClient;;
+ZivyObrazClient zoClient;
 
 SensorReading sensorReading;
 
