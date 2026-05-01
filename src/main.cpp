@@ -13,16 +13,12 @@
 #include "zdecoder.h"
 #include "bmpdecoder.h"
 #include "gfx.hpp"
+#include "apsettings.hpp"
 
 // ZIVYOBRAZ CLIENT PARAMS
 #define ZIVYOBRAZ_HOST = "https://cdn.zivyobraz.eu";
 #define ZIVYOBRAZ_API_VERSION = "3.0";
 #define ZIVYOBRAZ_FIRMWARE_VERSION = VERSION;
-
-#define AP_SSID = "ESPink";
-#define AP_PASS = "zivyobraz";
-#define AP_CONN_STR = "WIFI:S:" AP_SSID ";T:WPA;P:" AP_PASS ";";
-
 #define DEEP_SLEEP_TIME_S = 120;
 
 
@@ -44,6 +40,7 @@ GFX<DISPLAY_T> gfxDisplay(&display);
 WiFiManager wm;
 uint8_t rowBuffer[DISPLAY_T::WIDTH];
 
+APSettings apSettings;
 ZDec zDecoder;
 BMPDec bmpDecoder;
 ZivyObrazClient zoClient;
@@ -178,7 +175,7 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
     gfxDisplay.drawColorSwatch();
 
     uint16_t qrsize = 29 * scale;
-    gfxDisplay.drawQRCodeText(2 * scale, gfxDisplay.height() - qrsize - 2 * scale, AP_CONN_STR, static_cast<uint16_t>(RGB565::BLACK), static_cast<uint16_t>(RGB565::WHITE), scale);
+    gfxDisplay.drawQRCodeText(2 * scale, gfxDisplay.height() - qrsize - 2 * scale, apSettings.getConnstr().c_str(), static_cast<uint16_t>(RGB565::BLACK), static_cast<uint16_t>(RGB565::WHITE), scale);
     gfxDisplay.fullUpdate();
     log_i("Displaying config portal display.");
 }
@@ -211,7 +208,7 @@ void handleButtonPress()
         wm.erase();
         gfxDisplay.fillScreen(static_cast<uint16_t>(RGB565::WHITE));  // Clear the screen
         gfxDisplay.fullUpdate();
-        wm.startConfigPortal(AP_SSID, AP_PASS);
+        wm.startConfigPortal(apSettings.ssid, apSettings.password);
         // uint64_t sleepTimeSeconds = DEEP_SLEEP_TIME_S * 30 * 24 * 30;
         // log_i("Sleep for %lluh %llum %llus", sleepTimeSeconds / 3600, (sleepTimeSeconds % 3600) / 60, sleepTimeSeconds % 60);
         // esp_sleep_enable_timer_wakeup(sleepTimeSeconds * 1000000);
@@ -303,6 +300,7 @@ void setup()
     zoClient.registerHandler(ContentType::IMAGE_BMP, handleBMP);
 
     // setup wifi manager
+    apSettings.init();
     wm.setConfigPortalTimeout(300);
     wm.setConnectTimeout(30);
     wm.setHostname("ESPink");
@@ -331,7 +329,7 @@ void setup()
 
     log_i("Connecting to wifi.");
     // connect to wifi
-    bool wmStatus = wm.autoConnect(AP_SSID, AP_PASS);
+    bool wmStatus = wm.autoConnect(apSettings.ssid, apSettings.password);
     if (!wmStatus) {
         log_i("Could not connect");
         return;
