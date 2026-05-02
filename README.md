@@ -19,6 +19,10 @@ All sensors are detected automatically. It is even possible to daisy chain them 
 - [BH1750](https://www.laskakit.cz/laskakit-bh1750-snimac-intenzity-osvetleni/) [temp=lux]
 
 
+# How it works
+
+![Firmware flowchart](flowchart.gif)
+
 # How to build
 
 Make sure you have synced submodules:
