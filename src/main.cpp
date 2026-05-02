@@ -320,7 +320,9 @@ void setup()
 
     // setup interfaces
     Wire.setPins(PIN_I2C_SDA, PIN_I2C_SCL);
+    Wire.begin();
     Serial.begin(115200);
+    EPDBus::Begin(epdBusSettings);
 
     // setup display
     display.init();
@@ -362,7 +364,7 @@ void setup()
 
     // read sensors
     log_i("Reading sensors.");
-    readSensors();
+    sensorReading = readSensors();
 
     log_i("Connecting to wifi.");
     // connect to wifi
@@ -374,7 +376,6 @@ void setup()
     log_i("Connected to WiFi!");
     // log_i("Local IP: %s", WiFi.localIP().toString());
     // log_i("MAC: %s", WiFi.macAddress());
-
 
     log_i("Downloading image.");
     int code = zoClient.post("/index.php?timestampCheck=1", buildJsonPayload());
