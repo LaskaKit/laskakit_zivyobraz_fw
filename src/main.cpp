@@ -269,11 +269,49 @@ String buildJsonPayload()
     display["height"] = DISPLAY_T::HEIGHT;
     display["colorType"] = colorTypeToCStr(DISPLAY_T::COLORTYPE);
 
+    if (sensorReading.mask != MASK_NONE) {
+        JsonArray sensors = doc["sensors"].to<JsonArray>();
+        if (sensorReading.mask & MASK_SHT4x) {
+            JsonObject sht4x = sensors.add<JsonObject>();
+            sht4x["type"] = "SHT40";
+            sht4x["temp"] = sensorReading.sht.temperature;
+            sht4x["hum"] = sensorReading.sht.humidity;
+        }
+        if (sensorReading.mask & MASK_BME280) {
+            JsonObject bme280 = sensors.add<JsonObject>();
+            bme280["type"] = "BME280";
+            bme280["temp"] = sensorReading.bme.temperature;
+            bme280["hum"]  = sensorReading.bme.humidity;
+            bme280["pres"] = sensorReading.bme.pressure;
+        }
+
+        if (sensorReading.mask & MASK_SCD4x) {
+            JsonObject scd4x = sensors.add<JsonObject>();
+            scd4x["type"] = "SCD41";
+            scd4x["temp"] = sensorReading.scd.temperature;
+            scd4x["hum"]  = sensorReading.scd.humidity;
+            scd4x["co2"]  = sensorReading.scd.co2;
+        }
+
+        if (sensorReading.mask & MASK_STCC4) {
+            JsonObject stcc4 = sensors.add<JsonObject>();
+            stcc4["type"] = "STCC4";
+            stcc4["temp"] = sensorReading.stcc4.temperature;
+            stcc4["hum"]  = sensorReading.stcc4.humidity;
+            stcc4["co2"]  = sensorReading.stcc4.co2;
+        }
+
+        if (sensorReading.mask & MASK_SGP41) {
+            JsonObject sgp41 = sensors.add<JsonObject>();
+            sgp41["type"] = "SGP41";
+            sgp41["voc"]  = sensorReading.sgp41.voc;
+            sgp41["nox"]  = sensorReading.sgp41.nox;
+        }
+    }
     String out;
     serializeJsonPretty(doc, out);
     return out;
 }
-
 
 void setup()
 {
