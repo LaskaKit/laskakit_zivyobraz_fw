@@ -1,19 +1,19 @@
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <WiFi.h>
 #include <WiFiManager.h>
 #include <esp_log.h>
-#include <ArduinoJson.h>
 
+#include "apsettings.hpp"
+#include "bmpdecoder.h"
 #include "boards.hpp"
 #include "displays.hpp"
-#include "laskakit_epaper.hpp"
-#include "zivyobrazclient.hpp"
-#include "sensor.hpp"
 #include "epdbus.hpp"
-#include "zdecoder.h"
-#include "bmpdecoder.h"
 #include "gfx.hpp"
-#include "apsettings.hpp"
+#include "laskakit_epaper.hpp"
+#include "sensor.hpp"
+#include "zdecoder.h"
+#include "zivyobrazclient.hpp"
 
 // ZIVYOBRAZ CLIENT PARAMS
 #define ZIVYOBRAZ_HOST "https://cdn.zivyobraz.eu"
@@ -49,7 +49,8 @@ SensorReading sensorReading;
 // power on peripherals (I2C bus, display, ...)
 void powerOn()
 {
-    if (!PIN_PWR) return;
+    if (!PIN_PWR)
+        return;
     pinMode(PIN_PWR, OUTPUT);
     digitalWrite(PIN_PWR, HIGH);
 }
@@ -57,11 +58,11 @@ void powerOn()
 // power off peripherals (I2C bus, display, ...)
 void powerOff()
 {
-    if (!PIN_PWR) return;
+    if (!PIN_PWR)
+        return;
     pinMode(PIN_PWR, OUTPUT);
     digitalWrite(PIN_PWR, LOW);
 }
-
 
 double readBattery()
 {
@@ -71,27 +72,27 @@ double readBattery()
     return voltage;
 }
 
-
 // universal row callback
 template <class DECODER_T>
-void rowCallback(const DECODER_T* decoder) {
+void rowCallback(const DECODER_T* decoder)
+{
     for (uint16_t col = 0; col < decoder->width; col++) {
         switch (DISPLAY_T::COLORTYPE) {
-            case ColorType::BW:
-            case ColorType::G4:
-                gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z2GrayscaleToRGB565Lut, 4));
-                break;
-            case ColorType::C4:
-            case ColorType::RBW:
-            case ColorType::YBW:
-                gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z2ColorToRGB565Lut, 4));
-                break;
-            case ColorType::G8:
-                gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z3GrayscaleToRGB565Lut, 8));
-                break;
-            case ColorType::C7:
-                gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z3ColorToRGB565Lut, 8));
-                break;
+        case ColorType::BW:
+        case ColorType::G4:
+            gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z2GrayscaleToRGB565Lut, 4));
+            break;
+        case ColorType::C4:
+        case ColorType::RBW:
+        case ColorType::YBW:
+            gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z2ColorToRGB565Lut, 4));
+            break;
+        case ColorType::G8:
+            gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z3GrayscaleToRGB565Lut, 8));
+            break;
+        case ColorType::C7:
+            gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z3ColorToRGB565Lut, 8));
+            break;
         }
     }
 }
@@ -110,23 +111,20 @@ bool handleBMP(const uint8_t* data, size_t len)
 
 void displaySensors(GFX<DISPLAY_T>& gfxDisplay, SensorReading& reading)
 {
-    if (reading.flag & Sensor::_SHT4x) {
+    if (reading.mask & MASK_SHT4x) {
         gfxDisplay.printf(" SHT4x:T%.1fH%.1f\n", reading.sht.temperature, reading.sht.humidity);
     }
-    if (reading.flag & Sensor::_BME280) {
+    if (reading.mask & MASK_BME280) {
         gfxDisplay.printf(" BME280:T%.1fH%.1fP%.1f\n", reading.bme.temperature, reading.bme.humidity, reading.bme.pressure);
     }
-    if (reading.flag & Sensor::_SCD4x) {
+    if (reading.mask & MASK_SCD4x) {
         gfxDisplay.printf(" SCD4xT%.1fH%.1fCO2%.1f\n", reading.scd.temperature, reading.scd.humidity, reading.scd.co2);
     }
-    if (reading.flag & Sensor::_STCC4) {
+    if (reading.mask & MASK_STCC4) {
         gfxDisplay.printf(" STCC4:T%.1fH%.2fCO2%.1f\n", reading.stcc4.temperature, reading.stcc4.humidity, reading.stcc4.co2);
     }
-    if (reading.flag & Sensor::_SGP41) {
+    if (reading.mask & MASK_SGP41) {
         gfxDisplay.printf(" SGP41:VOC%dNOx%d\n", reading.sgp41.voc, reading.sgp41.nox);
-    }
-    if (reading.flag & Sensor::_BH1750) {
-        gfxDisplay.printf(" BH1750:LUX%.1f\n", reading.bh1750.lux);
     }
 }
 
@@ -149,17 +147,17 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
 
     gfxDisplay.setTextColor(static_cast<uint16_t>(RGB565::BLACK));
     gfxDisplay.printf("    Board: ");
-    #if defined ESPINK_V3
-        gfxDisplay.printf(" ESPink v3\n");
-    #elif defined ESPINK_V2
-        gfxDisplay.printf(" ESPink v2\n");
-    #elif defined UESPINK_V1
-        gfxDisplay.printf(" MicroESPink v1\n");
-    #elif defined EPDIY_V7
-        gfxDisplay.printf(" EPDIY v7");
-    #else
-        gfxDisplay.printf("unknown\n");
-    #endif
+#if defined ESPINK_V3
+    gfxDisplay.printf("ESPink v3\n");
+#elif defined ESPINK_V2
+    gfxDisplay.printf("ESPink v2\n");
+#elif defined UESPINK_V1
+    gfxDisplay.printf("MicroESPink v1\n");
+#elif defined EPDIY_V7
+    gfxDisplay.printf("EPDIY v7");
+#else
+    gfxDisplay.printf("unknown\n");
+#endif
     gfxDisplay.printf("  Display: %s\n", DISPLAY_T::NAME);
     gfxDisplay.printf("      Res: %lux%lu\n", DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT);
     gfxDisplay.printf("    Color: %s\n", colorTypeToCStr(DISPLAY_T::COLORTYPE));
@@ -205,7 +203,7 @@ void handleButtonPress()
     if (buttonPressed()) {
         log_i("Button pressed. Clear white and reset wifi settings.");
         wm.erase();
-        gfxDisplay.fillScreen(static_cast<uint16_t>(RGB565::WHITE));  // Clear the screen
+        gfxDisplay.fillScreen(static_cast<uint16_t>(RGB565::WHITE)); // Clear the screen
         gfxDisplay.fullUpdate();
         wm.startConfigPortal(apSettings.ssid.c_str(), apSettings.password.c_str());
         // uint64_t sleepTimeSeconds = DEEP_SLEEP_TIME_S * 30 * 24 * 30;
@@ -215,13 +213,12 @@ void handleButtonPress()
         // esp_deep_sleep_start();
     }
 }
-#endif  // ESPINK_V3
-
+#endif // ESPINK_V3
 
 // return sleep time in seconds
 uint64_t parseSleepTime()
 {
-    char headerValue[20];  // tmp buffer
+    char headerValue[20]; // tmp buffer
     if (zoClient.getHeader(headerValue, 20, "PreciseSleep")) {
         log_i("Use PreciseSleep");
         return String(headerValue).toInt();
@@ -241,17 +238,17 @@ String buildJsonPayload()
 {
     JsonDocument doc;
     doc["apiVersion"] = ZIVYOBRAZ_API_VERSION;
-    #if defined ESPINK_V3
-        doc["board"] = "ESPink_V3";
-    #elif defined ESPINK_V2
-        doc["board"] = "ESPink_V2";
-    #elif defined UESPINK_V1
-        doc["board"] = "Micro ESPink_V1";
-    #elif defined EPDIY_V7
-        doc["board"] = "EPDIY_V7";
-    #else
-        doc["board"] = "unknown";
-    #endif
+#if defined ESPINK_V3
+    doc["board"] = "ESPink_V3";
+#elif defined ESPINK_V2
+    doc["board"] = "ESPink_V2";
+#elif defined UESPINK_V1
+    doc["board"] = "Micro ESPink_V1";
+#elif defined EPDIY_V7
+    doc["board"] = "EPDIY_V7";
+#else
+    doc["board"] = "unknown";
+#endif
     doc["fwVersion"] = ZIVYOBRAZ_FIRMWARE_VERSION;
 
     JsonObject system = doc["system"].to<JsonObject>();
@@ -380,8 +377,7 @@ void setup()
     log_i("Downloading image.");
     int code = zoClient.post("/index.php?timestampCheck=1", buildJsonPayload());
     log_i("Received code: %d", code);
-    uint64_t sleepTimeSeconds = DEEP_SLEEP_TIME_S;  // default
-
+    uint64_t sleepTimeSeconds = DEEP_SLEEP_TIME_S; // default
 
     if (code == 200) {
         sleepTimeSeconds = parseSleepTime();
@@ -405,7 +401,6 @@ void setup()
     esp_sleep_enable_timer_wakeup(sleepTimeSeconds * 1000000);
     esp_deep_sleep_start();
 }
-
 
 void loop()
 {
