@@ -1,7 +1,6 @@
-
 #pragma once
 
-#include <Adafruit_SHT4x.h>
+#include <SensirionI2cSht4x.h>
 #include <Adafruit_BME280.h>
 #include <SparkFun_SCD4x_Arduino_Library.h>
 #include <SensirionI2cStcc4.h>
@@ -9,7 +8,7 @@
 #include <BH1750.h>
 #include <esp_log.h>
 
-Adafruit_SHT4x sht4;
+SensirionI2cSht4x sht4;
 Adafruit_BME280 bme;
 SCD4x SCD4(SCD4x_SENSOR_SCD41);
 SensirionI2cStcc4 stcc4;
@@ -79,15 +78,16 @@ namespace LaskaKit::ZivyObraz {
 
     bool readSHT4x(SensorReading& reading)
     {
-        if (!sht4.begin()) {
+        sht4.begin(Wire, SHT40_I2C_ADDR_44);
+
+        float temp = 0.0f, hum = 0.0f;
+        uint16_t err = sht4.measureLowestPrecision(temp, hum);
+        if (err) {
             return false;
         }
-        sht4.setPrecision(SHT4X_LOW_PRECISION);
-        sht4.setHeater(SHT4X_NO_HEATER);
-        sensors_event_t hum, temp;
-        sht4.getEvent(&hum, &temp);
-        reading.sht.temperature = temp.temperature;
-        reading.sht.humidity = hum.relative_humidity;
+
+        reading.sht.temperature = temp;
+        reading.sht.humidity = hum;
         reading.flag |= Sensor::_SHT4x;
         return true;
     }
