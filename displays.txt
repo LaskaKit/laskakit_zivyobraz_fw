@@ -18,4 +18,4 @@ size    colorspace  name            driver  epdiy-v7    espink-v3   espink-v2   
 11.6    C4          GDEY116F51      GXEPD   0           1           0           0           SSD2677    [eshop](https://www.laskakit.cz/good-display-gdey116f51-11-6--960x640-epaper-displej-4-barvy/)
 11.6    BW          GDEY116T91      GXEPD   0           1           0           0           SSD1677    [eshop](https://www.laskakit.cz/good-display-gdey116t91-11-6--960x640-epaper-displej-grayscale/)
 12.48   C4          GDEY1248F51     RAW     0           1           0           0           IST7166    [eshop](https://www.laskakit.cz/good-display-gdey1248z51-12-48--1304x984-epaper-cerveny-displej/)
-13.3    G8          GDEP133UT3      FASTEPD 1           0           0           0           PARALLEL   [eshop](https://www.laskakit.cz/good-display-gdep133ut3-13-3--1600x1200-parallel-epaper-displej/)
+13.3    G8          GDEP133UT3      EPDIY   1           0           0           0           PARALLEL   [eshop](https://www.laskakit.cz/good-display-gdep133ut3-13-3--1600x1200-parallel-epaper-displej/)

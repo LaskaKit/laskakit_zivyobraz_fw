@@ -22,6 +22,7 @@
 #define DEEP_SLEEP_TIME_S 120
 
 // ---------------
+using namespace LaskaKit;
 using namespace LaskaKit::ZivyObraz;
 using namespace LaskaKit::Epaper;
 
@@ -77,23 +78,115 @@ template <class DECODER_T>
 void rowCallback(const DECODER_T* decoder)
 {
     for (uint16_t col = 0; col < decoder->width; col++) {
+        gfxDisplay.drawPixel(col, decoder->currentRow, decoder->rowBuffer[col]);
+    }
+}
+
+void zRowCallback(const ZDecoder* zdec)
+{
+    for (uint16_t col = 0; col < zdec->width; col++) {
+        uint8_t color = 0x0;
         switch (DISPLAY_T::COLORTYPE) {
-        case ColorType::BW:
-        case ColorType::G4:
-            gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z2GrayscaleToRGB565Lut, 4));
-            break;
-        case ColorType::C4:
-        case ColorType::RBW:
-        case ColorType::YBW:
-            gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z2ColorToRGB565Lut, 4));
-            break;
-        case ColorType::G8:
-            gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z3GrayscaleToRGB565Lut, 8));
-            break;
-        case ColorType::C7:
-            gfxDisplay.drawPixel(col, decoder->currentRow, ZtoRGB565(decoder->rowBuffer[col], z3ColorToRGB565Lut, 8));
-            break;
+            case Epaper::ColorType::G4:
+                switch (zdec->rowBuffer[col]) {
+                    case 0:
+                        color = 0x3;
+                        break;
+                    case 1:
+                        color = 0x0;
+                        break;
+                    case 2:
+                        color = 0x2;
+                        break;
+                    case 3:
+                        color = 0x1;
+                        break;
+                }
+                break;
+            case Epaper::ColorType::G8:
+                // no display uses it yet
+                break;
+            case Epaper::ColorType::G16:
+                switch (zdec->rowBuffer[col]) {
+                    case 0:
+                        color = 0xF;
+                        break;
+                    case 1:
+                        color = 0x0;
+                        break;
+                    case 2:
+                        color = 0xC;
+                        break;
+                    case 3:
+                        color = 0x6;
+                        break;
+                    case 4:
+                        color = 0xA;
+                        break;
+                    case 5:
+                        color = 0x8;
+                        break;
+                    case 6:
+                        color = 0x4;
+                        break;
+                    case 7:
+                        color = 0x2;
+                        break;
+                }
+                break;
+            case Epaper::ColorType::BWR:
+            case Epaper::ColorType::RBW:
+                switch (zdec->rowBuffer[col]) {
+                    case 0:
+                        color = 0x1;
+                        break;
+                    case 1:
+                        color = 0x0;
+                        break;
+                    case 2:
+                        color = 0x2;
+                        break;
+                }
+                break;
+            case Epaper::ColorType::BWY:
+            case Epaper::ColorType::YBW:
+                switch (zdec->rowBuffer[col]) {
+                    case 0:
+                        color = 0x1;
+                        break;
+                    case 1:
+                        color = 0x0;
+                        break;
+                    case 3:
+                        color = 0x2;
+                        break;
+                }
+                break;
+            case Epaper::ColorType::BWRY:
+            case Epaper::ColorType::C4:
+                switch (zdec->rowBuffer[col]) {
+                    case 0:
+                        color = 0x1;
+                        break;
+                    case 1:
+                        color = 0x0;
+                        break;
+                    case 2:
+                        color = 0x2;
+                        break;
+                    case 3:
+                        color = 0x3;
+                        break;
+                }
+                break;
+            case Epaper::ColorType::C7:
+                // not used anywhere
+                break;
+            case Epaper::ColorType::BW:
+                color = !zdec->rowBuffer[col];
+                break;
         }
+        gfxDisplay.drawPixel(col, zdec->currentRow, color);
     }
 }
 
@@ -107,6 +200,12 @@ bool handleBMP(const uint8_t* data, size_t len)
 {
     bmpDecoder.decode(data, len);
     return bmpDecoder.state() != BMP_ERROR;
+}
+
+bool handleHTML(const uint8_t* data, size_t len)
+{
+    log_i("%.*s", len, (const char*)data);
+    return true;
 }
 
 void displaySensors(GFX<DISPLAY_T>& gfxDisplay, SensorReading& reading)
@@ -325,8 +424,8 @@ void setup()
     display.init();
 
     // setup decoders
-    zDecoder.init(DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT, rowBuffer, rowCallback);
-    bmpDecoder.init(DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT, rowBuffer, z2GrayscaleToRGB565Lut, 4, rowCallback);
+    zDecoder.init(DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT, rowBuffer, zRowCallback);
+    bmpDecoder.init(DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT, rowBuffer, nullptr, 0, rowCallback);
 
     // setup zivyobraz client
     zoClient.setBaseUrl(ZIVYOBRAZ_HOST);
@@ -334,6 +433,8 @@ void setup()
     zoClient.registerHandler(ContentType::IMAGE_Z2, handleZ);
     zoClient.registerHandler(ContentType::IMAGE_Z3, handleZ);
     zoClient.registerHandler(ContentType::IMAGE_BMP, handleBMP);
+    zoClient.registerHandler(ContentType::TEXT_HTML, handleHTML);
+    zoClient.registerHandler(ContentType::APPLICATION_OCTET_STREAM, handleBMP);
 
     // setup wifi manager
     apSettings.init();
@@ -363,19 +464,20 @@ void setup()
     log_i("Reading sensors.");
     sensorReading = readSensors();
 
-    log_i("Connecting to wifi.");
     // connect to wifi
+    log_i("Connecting to wifi.");
+    uint32_t wifiStart = millis();
     bool wmStatus = wm.autoConnect(apSettings.ssid.c_str(), apSettings.password.c_str());
     if (!wmStatus) {
         log_i("Could not connect");
         return;
     }
-    log_i("Connected to WiFi!");
-    // log_i("Local IP: %s", WiFi.localIP().toString());
-    // log_i("MAC: %s", WiFi.macAddress());
+    log_i("WiFi connected: %d ms", millis() - wifiStart);
 
     log_i("Downloading image.");
+    uint32_t postStart = millis();
     int code = zoClient.post("/index.php?timestampCheck=1", buildJsonPayload());
+    log_i("PostDone: %d ms", millis() - postStart);
     log_i("Received code: %d", code);
     uint64_t sleepTimeSeconds = DEEP_SLEEP_TIME_S; // default
 
