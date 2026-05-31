@@ -229,7 +229,7 @@ void displaySensors(GFX<DISPLAY_T>& gfxDisplay, SensorReading& reading)
 
 void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
 {
-    gfxDisplay.fillScreen(static_cast<uint16_t>(RGB565::WHITE));
+    gfxDisplay.fillScreen(GFX<DISPLAY_T>::COLOR_WHITE);
 
     uint8_t scale = 4;
     if (gfxDisplay.height() < 300 || gfxDisplay.width() < 300) {
@@ -244,7 +244,7 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
     }
     gfxDisplay.setCursor(0, 0);
 
-    gfxDisplay.setTextColor(static_cast<uint16_t>(RGB565::BLACK));
+    gfxDisplay.setTextColor(GFX<DISPLAY_T>::COLOR_BLACK);
     gfxDisplay.printf("    Board: ");
 #if defined ESPINK_V3
     gfxDisplay.printf("ESPink v3\n");
@@ -271,14 +271,14 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
     gfxDisplay.drawColorSwatch();
 
     uint16_t qrsize = 29 * scale;
-    gfxDisplay.drawQRCodeText(2 * scale, gfxDisplay.height() - qrsize - 2 * scale, apSettings.getConnstr().c_str(), static_cast<uint16_t>(RGB565::BLACK), static_cast<uint16_t>(RGB565::WHITE), scale);
+    gfxDisplay.drawQRCodeText(2 * scale, gfxDisplay.height() - qrsize - 2 * scale, apSettings.getConnstr().c_str(), GFX<DISPLAY_T>::COLOR_BLACK, GFX<DISPLAY_T>::COLOR_WHITE, scale);
     gfxDisplay.fullUpdate();
     log_i("Displaying config portal display.");
 }
 
 void screenConfigPortalTimeout(GFX<DISPLAY_T>& gfxDisplay)
 {
-    gfxDisplay.fillScreen(static_cast<uint16_t>(RGB565::WHITE));
+    gfxDisplay.fillScreen(GFX<DISPLAY_T>::COLOR_WHITE);
     gfxDisplay.setTextSize(2);
     gfxDisplay.setCursor(0, 0);
     gfxDisplay.printf("Configuration portal has timed out.\n");
@@ -302,7 +302,7 @@ void handleButtonPress()
     if (buttonPressed()) {
         log_i("Button pressed. Clear white and reset wifi settings.");
         wm.erase();
-        gfxDisplay.fillScreen(static_cast<uint16_t>(RGB565::WHITE)); // Clear the screen
+        gfxDisplay.fillScreen(GFX<DISPLAY_T>::COLOR_WHITE); // Clear the screen
         gfxDisplay.fullUpdate();
         wm.startConfigPortal(apSettings.ssid.c_str(), apSettings.password.c_str());
         // uint64_t sleepTimeSeconds = DEEP_SLEEP_TIME_S * 30 * 24 * 30;
