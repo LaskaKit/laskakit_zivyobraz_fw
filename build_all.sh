@@ -10,7 +10,7 @@ ESPINKV2_BBEP=$(awk 'NR>1 && $4=="BBEP" && $7=="1" {print $3}' "$DISPLAY_LIST_FI
 uESPINKV1_RAW=$(awk 'NR>1 && $4=="RAW" && $8=="1" {print $3}' "$DISPLAY_LIST_FILE")
 uESPINKV1_GXEPD=$(awk 'NR>1 && $4=="GXEPD" && $8=="1" {print $3}' "$DISPLAY_LIST_FILE")
 uESPINKV1_BBEP=$(awk 'NR>1 && $4=="BBEP" && $8=="1" {print $3}' "$DISPLAY_LIST_FILE")
-EPDIYV7_FASTEPD=$(awk 'NR>1 && $4=="FASTEPD" && $5=="1" {print $3}' "$DISPLAY_LIST_FILE")
+EPDIYV7_EPDIY=$(awk 'NR>1 && $4=="EPDIY" && $5=="1" {print $3}' "$DISPLAY_LIST_FILE")
 
 
 function build() {
@@ -41,4 +41,4 @@ build espink-v2-bbep $ESPINKV2_BBEP
 build uespink-v1 $uESPINKV1_RAW
 build uespink-v1-gxepd $uESPINKV1_GXEPD
 build uespink-v1-bbep $uESPINKV1_BBEP
-build epdiy-v7-fastepd $EPDIYV7_FASTEPD
+build epdiy-v7-epdiy $EPDIYV7_EPDIY
