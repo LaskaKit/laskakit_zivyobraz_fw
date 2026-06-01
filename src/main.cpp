@@ -11,9 +11,12 @@
 #include "epdbus.hpp"
 #include "gfx.hpp"
 #include "laskakit_epaper.hpp"
-#include "sensor.hpp"
 #include "zdecoder.h"
 #include "zivyobrazclient.hpp"
+
+#ifndef SENSORS_DISABLED
+#include "sensor.hpp"
+#endif
 
 // ZIVYOBRAZ CLIENT PARAMS
 #define ZIVYOBRAZ_HOST "https://cdn.zivyobraz.eu"
@@ -45,7 +48,9 @@ ZDec zDecoder;
 BMPDec bmpDecoder;
 ZivyObrazClient zoClient;
 
+#ifndef SENSORS_DISABLED
 SensorReading sensorReading;
+#endif
 
 // power on peripherals (I2C bus, display, ...)
 void powerOn()
@@ -208,6 +213,7 @@ bool handleHTML(const uint8_t* data, size_t len)
     return true;
 }
 
+#ifndef SENSORS_DISABLED
 void displaySensors(GFX<DISPLAY_T>& gfxDisplay, SensorReading& reading)
 {
     if (reading.mask & MASK_SHT4x) {
@@ -226,6 +232,7 @@ void displaySensors(GFX<DISPLAY_T>& gfxDisplay, SensorReading& reading)
         gfxDisplay.printf(" SGP41:VOC%dNOx%d\n", reading.sgp41.voc, reading.sgp41.nox);
     }
 }
+#endif
 
 void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
 {
@@ -266,8 +273,12 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
     gfxDisplay.printf("  AP PASS: %s\n", apSettings.password.c_str());
     gfxDisplay.printf("  Battery: %4.2f V\n", readBattery());
     // gfxDisplay.printf("    PSRAM: %d bytes\n", psramFound() ? ESP.getPsramSize() : 0);
+#ifndef SENSORS_DISABLED
     gfxDisplay.printf("   Sensor:\n");
     displaySensors(gfxDisplay, sensorReading);
+#else
+    gfxDisplay.printf("  Sensors: disabled\n");
+#endif
     gfxDisplay.drawColorSwatch();
 
     uint16_t qrsize = 29 * scale;
@@ -365,6 +376,7 @@ String buildJsonPayload()
     display["height"] = DISPLAY_T::HEIGHT;
     display["colorType"] = colorTypeToCStr(DISPLAY_T::COLORTYPE);
 
+#ifndef SENSORS_DISABLED
     if (sensorReading.mask != MASK_NONE) {
         JsonArray sensors = doc["sensors"].to<JsonArray>();
         if (sensorReading.mask & MASK_SHT4x) {
@@ -404,6 +416,7 @@ String buildJsonPayload()
             sgp41["nox"]  = sensorReading.sgp41.nox;
         }
     }
+#endif
     String out;
     serializeJsonPretty(doc, out);
     return out;
@@ -415,8 +428,10 @@ void setup()
     powerOn();
 
     // setup interfaces
+#ifndef SENSORS_DISABLED
     Wire.setPins(PIN_I2C_SDA, PIN_I2C_SCL);
     Wire.begin();
+#endif
     Serial.begin(115200);
     EPDBus::Begin(epdBusSettings);
 
@@ -460,9 +475,10 @@ void setup()
     handleButtonPress();
 #endif
 
-    // read sensors
+#ifndef SENSORS_DISABLED
     log_i("Reading sensors.");
     sensorReading = readSensors();
+#endif
 
     // connect to wifi
     log_i("Connecting to wifi.");
