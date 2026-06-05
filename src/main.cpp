@@ -45,6 +45,10 @@ GFX<DISPLAY_T> gfxDisplay(&display);
 WiFiManager wm;
 uint8_t rowBuffer[DISPLAY_T::WIDTH];
 
+RTC_DATA_ATTR static uint8_t rtcBSSID[6];
+RTC_DATA_ATTR static uint8_t rtcChannel = 0;
+RTC_DATA_ATTR static bool rtcCacheValid = false;
+
 APSettings apSettings;
 ZDec zDecoder;
 BMPDec bmpDecoder;
@@ -493,11 +497,44 @@ void setup()
     // connect to wifi
     log_i("Connecting to wifi.");
     uint32_t wifiStart = millis();
-    bool wmStatus = wm.autoConnect(apSettings.ssid.c_str(), apSettings.password.c_str());
-    if (!wmStatus) {
-        log_i("Could not connect");
+
+    WiFi.mode(WIFI_STA);
+
+    // try to bypass wifi manager and use cached channel/BSSID
+    // for faster connection (less power)
+    bool wifiConnected = false;
+    String savedSSID = wm.getWiFiSSID();
+    String savedPass = wm.getWiFiPass();
+    if (savedSSID.length() > 0) {
+        log_i("Trying direct connect to '%s'%s.", savedSSID.c_str(), rtcCacheValid ? " (cached channel/BSSID)" : "");
+        if (rtcCacheValid) {
+            WiFi.begin(savedSSID.c_str(), savedPass.c_str(), rtcChannel, rtcBSSID, true);
+        } else {
+            WiFi.begin(savedSSID.c_str(), savedPass.c_str());
+        }
+        uint32_t t0 = millis();
+        while (WiFi.status() != WL_CONNECTED && millis() - t0 < 10000) {
+            delay(100);
+        }
+        wifiConnected = WiFi.status() == WL_CONNECTED;
+        if (!wifiConnected) {
+            rtcCacheValid = false;
+        }
+    }
+
+    if (!wifiConnected) {
+        log_i("Direct connect failed, falling back to WiFiManager.");
+        WiFi.disconnect();
+        wifiConnected = wm.autoConnect(apSettings.ssid.c_str(), apSettings.password.c_str());
+    }
+
+    if (!wifiConnected) {
+        log_i("Could not connect.");
         return;
     }
+    rtcChannel = WiFi.channel();
+    memcpy(rtcBSSID, WiFi.BSSID(), 6);
+    rtcCacheValid = true;
     log_i("WiFi connected: %d ms", millis() - wifiStart);
 
     log_i("Downloading image.");
