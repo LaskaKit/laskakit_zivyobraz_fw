@@ -3,6 +3,8 @@
 #include <WiFi.h>
 #include <WiFiManager.h>
 #include <esp_log.h>
+#include <esp_mac.h>
+#include <esp_psram.h>
 
 #include "apsettings.hpp"
 #include "bmpdecoder.h"
@@ -252,6 +254,7 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
     gfxDisplay.setCursor(0, 0);
 
     gfxDisplay.setTextColor(GFX<DISPLAY_T>::COLOR_BLACK);
+    gfxDisplay.printf("  Version: %s\n", VERSION);
     gfxDisplay.printf("    Board: ");
 #if defined ESPINK_V3
     gfxDisplay.printf("ESPink v3\n");
@@ -260,7 +263,7 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
 #elif defined UESPINK_V1
     gfxDisplay.printf("MicroESPink v1\n");
 #elif defined EPDIY_V7
-    gfxDisplay.printf("EPDIY v7");
+    gfxDisplay.printf("EPDIY v7\n");
 #else
     gfxDisplay.printf("unknown\n");
 #endif
@@ -268,11 +271,18 @@ void screenConfigPortal(GFX<DISPLAY_T>& gfxDisplay)
     gfxDisplay.printf("      Res: %lux%lu\n", DISPLAY_T::WIDTH, DISPLAY_T::HEIGHT);
     gfxDisplay.printf("    Color: %s\n", colorTypeToCStr(DISPLAY_T::COLORTYPE));
     gfxDisplay.printf("       IP: %s\n", WiFi.softAPIP().toString().c_str());
-    gfxDisplay.printf("      MAC: %s\n", WiFi.macAddress().c_str());
+    // wifi sta not initialized yes, so WiFi.macAddress() won't work
+    // need to read the base mac directly from efuse
+    uint8_t mac[6];
+    esp_efuse_mac_get_default(mac);
+    gfxDisplay.printf("      MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
+        mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     gfxDisplay.printf("  AP SSID: %s\n", apSettings.ssid.c_str());
     gfxDisplay.printf("  AP PASS: %s\n", apSettings.password.c_str());
     gfxDisplay.printf("  Battery: %4.2f V\n", readBattery());
-    // gfxDisplay.printf("    PSRAM: %d bytes\n", psramFound() ? ESP.getPsramSize() : 0);
+#ifdef BOARD_HAS_PSRAM
+    gfxDisplay.printf("    PSRAM: %d MiB\n", psramFound() ? esp_psram_get_size() / 1024 / 1024 : 0);
+#endif
 #ifndef SENSORS_DISABLED
     gfxDisplay.printf("   Sensor:\n");
     displaySensors(gfxDisplay, sensorReading);

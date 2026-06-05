@@ -1,5 +1,5 @@
-#include <WiFi.h>
 #include <displays.hpp>
+#include <esp_mac.h>
 
 
 struct APSettings
@@ -18,7 +18,11 @@ struct APSettings
 
 private:
     static String make_ssid() {
-        String mac_suffix = WiFi.macAddress().substring(15);  // the last 2 chars
+        uint8_t mac[6];
+        esp_efuse_mac_get_default(mac);
+        char buf[3];
+        sprintf(buf, "%02X", mac[5]);
+        String mac_suffix = String(buf);  // the last 2 chars
         return String("LIVE_") + String(DISPLAY_T::NAME) + "_" + mac_suffix;
     }
 };
